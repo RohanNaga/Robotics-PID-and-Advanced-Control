@@ -39,7 +39,13 @@ float Simulink_PlotVar1 = 0;
 float Simulink_PlotVar2 = 0;
 float Simulink_PlotVar3 = 0;
 float Simulink_PlotVar4 = 0;
-
+float len = 0;
+float x = 0;
+float y = 0;
+float theta2 = 0;
+float theta3 = 0;
+float r = 0;
+float z = 0;
 
 void mains_code(void);
 
@@ -58,7 +64,7 @@ void main(void)
 void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float *tau2,float *tau3, int error) {
 
 
-    *tau1 = 2.0;
+    *tau1 = 0;
     *tau2 = 0;
     *tau3 = 0;
 
@@ -92,12 +98,20 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
     Simulink_PlotVar3 = theta3motor;
     Simulink_PlotVar4 = 0;
 
+    len = .254;
+    theta2 = theta2motor- PI/2;
+    theta3 = theta3motor - theta2motor + PI/2;
+    r = sin(theta2)*len + sin(theta3)*len;
+    x = r*cos(theta1motor);
+    y = r*sin(theta1motor);
+    z = len + cos(theta2)*len +cos(theta3)*len;
+
     mycount++;
 }
 
 void printing(void){
     if (whattoprint == 0) {
-        serial_printf(&SerialA, "%.2f %.2f,%.2f,%.2f   \n\r",printtheta1motor*180/PI,printtheta2motor*180/PI,printtheta3motor*180/PI,custom);
+        serial_printf(&SerialA, "%.2f %.2f,%.2f,%.2f,%.2f,%.2f   \n\r",printtheta1motor*180/PI,printtheta2motor*180/PI,printtheta3motor*180/PI,x,y,z);
     } else {
         serial_printf(&SerialA, "Print test   \n\r");
     }
