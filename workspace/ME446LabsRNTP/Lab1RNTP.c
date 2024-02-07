@@ -46,6 +46,10 @@ float theta2 = 0;
 float theta3 = 0;
 float r = 0;
 float z = 0;
+float desmotortheta1 = 0;
+float desmotortheta2 = 0;
+float desmotortheta3 = 0;
+
 
 void mains_code(void);
 
@@ -98,20 +102,23 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
     Simulink_PlotVar3 = theta3motor;
     Simulink_PlotVar4 = 0;
 
-    len = .254;
-    theta2 = theta2motor- PI/2;
-    theta3 = theta3motor - theta2motor + PI/2;
-    r = sin(theta2)*len + sin(theta3)*len;
-    x = r*cos(theta1motor);
-    y = r*sin(theta1motor);
-    z = len + cos(theta2)*len +cos(theta3)*len;
+    x = (127.0*cos(theta1motor)*(cos(theta3motor) + sin(theta2motor)))/500.0;
+    y = (127.0*sin(theta1motor)*(cos(theta3motor) + sin(theta2motor)))/500.0;
+    z = (127.0*cos(theta2motor))/500 - (127*sin(theta3motor))/500 + 127.0/500.0;
+
+    desmotortheta1 = atan2(y, x);
+    desmotortheta2 = PI/2 - atan2(z - 127.0/500.0, sqrt(x*x + y*y)) - acos((250.0*sqrt((z - 127.0/500.0)*(z - 127.0/500.0) + x*x + y*y))/127.0);
+    desmotortheta3 = PI - atan2(z - 127.0/500.0, sqrt(x*x + y*y)) - acos((36028797018963968.0*(z*z - 127.0/500.0)*(z*z - 127.0/500.0))/4648867736950959.0 + (36028797018963968.0*x*x)/4648867736950959.0 + (36028797018963968.0*y*y)/4648867736950959.0 - 1) - acos((250.0*sqrt((z - 127.0/500.0)*(z - 127.0/500.0) + x*x + y*y))/127.0);
+
+
+
 
     mycount++;
 }
 
 void printing(void){
     if (whattoprint == 0) {
-        serial_printf(&SerialA, "%.2f %.2f,%.2f,%.2f,%.2f,%.2f   \n\r",printtheta1motor*180/PI,printtheta2motor*180/PI,printtheta3motor*180/PI,x,y,z);
+        serial_printf(&SerialA, "%.2f %.2f,%.2f,%.2f,%.2f,%.2f   \n\r",printtheta1motor,printtheta2motor,printtheta3motor,desmotortheta1,desmotortheta2, desmotortheta3);
     } else {
         serial_printf(&SerialA, "Print test   \n\r");
     }
