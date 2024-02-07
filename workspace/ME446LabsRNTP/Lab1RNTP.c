@@ -108,6 +108,7 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
 
     desmotortheta1 = atan2(y, x);
     desmotortheta2 = PI/2 - atan2(z - 127.0/500.0, sqrt(x*x + y*y)) - acos((250.0*sqrt((z - 127.0/500.0)*(z - 127.0/500.0) + x*x + y*y))/127.0);
+    thetaf
     desmotortheta3 = PI - atan2(z - 127.0/500.0, sqrt(x*x + y*y)) - acos((36028797018963968.0*(z*z - 127.0/500.0)*(z*z - 127.0/500.0))/4648867736950959.0 + (36028797018963968.0*x*x)/4648867736950959.0 + (36028797018963968.0*y*y)/4648867736950959.0 - 1) - acos((250.0*sqrt((z - 127.0/500.0)*(z - 127.0/500.0) + x*x + y*y))/127.0);
 
 
