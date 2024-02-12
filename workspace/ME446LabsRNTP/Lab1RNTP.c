@@ -39,7 +39,7 @@ float Simulink_PlotVar1 = 0;
 float Simulink_PlotVar2 = 0;
 float Simulink_PlotVar3 = 0;
 float Simulink_PlotVar4 = 0;
-float len = 0;
+float len = .254;
 float x = 0;
 float y = 0;
 float theta2 = 0;
@@ -49,7 +49,13 @@ float z = 0;
 float desmotortheta1 = 0;
 float desmotortheta2 = 0;
 float desmotortheta3 = 0;
-
+float thetag = 0;
+float h = 0;
+float q3 = 0;
+float q2 = 0;
+float thetax = 0;
+float thetay = 0;
+float d1 = .254;
 
 void mains_code(void);
 
@@ -106,12 +112,17 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
     y = (127.0*sin(theta1motor)*(cos(theta3motor) + sin(theta2motor)))/500.0;
     z = (127.0*cos(theta2motor))/500 - (127*sin(theta3motor))/500 + 127.0/500.0;
 
+
+    r = sqrt(x*x+y*y);
+    h = sqrt(r*r+(z-d1)*(z-d1));
     desmotortheta1 = atan2(y, x);
-    desmotortheta2 = PI/2 - atan2(z - 127.0/500.0, sqrt(x*x + y*y)) - acos((250.0*sqrt((z - 127.0/500.0)*(z - 127.0/500.0) + x*x + y*y))/127.0);
-    thetaf
-    desmotortheta3 = PI - atan2(z - 127.0/500.0, sqrt(x*x + y*y)) - acos((36028797018963968.0*(z*z - 127.0/500.0)*(z*z - 127.0/500.0))/4648867736950959.0 + (36028797018963968.0*x*x)/4648867736950959.0 + (36028797018963968.0*y*y)/4648867736950959.0 - 1) - acos((250.0*sqrt((z - 127.0/500.0)*(z - 127.0/500.0) + x*x + y*y))/127.0);
-
-
+    thetax = atan2(z-d1,r);
+    thetay = acos((h*h+len*len-len*len)/(2*h*len));
+    q2 = thetax+thetay;
+    desmotortheta2 = -q2 + PI/2;
+    thetag = acos((-(h*h)+len*len+len*len)/(2*len*len));
+    q3 = PI - thetag;
+    desmotortheta3 = q3 + desmotortheta2 -PI/2;
 
 
     mycount++;
