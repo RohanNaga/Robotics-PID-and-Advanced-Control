@@ -56,6 +56,46 @@ float q2 = 0;
 float thetax = 0;
 float thetay = 0;
 float d1 = .254;
+float KP1 = 40;
+float KD1 = 1.7;
+float KP2 = 40;
+float KD2 = 2;
+float KP3 = 40;
+float KD3 = 1.7;
+float theta1des;
+float theta2des;
+float theta3des;
+float theta1motorlast;
+float theta2motorlast;
+float theta3motorlast;
+float Theta1_old = 0;
+float Omega1_old1 = 0;
+float Omega1_old2 = 0;
+float Omega1 = 0;
+float Theta2_old = 0;
+float Omega2_old1 = 0;
+float Omega2_old2 = 0;
+float Omega2 = 0;
+float Theta3_old = 0;
+float Omega3_old1 = 0;
+float Omega3_old2 = 0;
+float Omega3 = 0;
+float error1old = 0;
+float error2old = 0;
+float error3old = 0;
+float error1 = 0;
+float error2 = 0;
+float error3 = 0;
+float Integralold1 = 0;
+float Integral1 = 0;
+float Integralold2 = 0;
+float Integral2 = 0;
+float Integralold3 = 0;
+float Integral3 = 0;
+float T = 0;
+float Ki1 = 0;
+float Ki2 = 0;
+float Ki3 = 0;
 
 void mains_code(void);
 
@@ -73,12 +113,84 @@ void main(void)
 // This function is called every 1 ms
 void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float *tau2,float *tau3, int error) {
 
+    if (mycount % 2000 < 1000){
+        theta1des = 0;
+        theta2des = 0;
+        theta3des = 0;
+    } else {
+        theta1des = PI/6;
+        theta2des = PI/6;
+        theta3des = PI/6;
+    }
+    T = 0.001;
 
-    *tau1 = 0;
-    *tau2 = 0;
-    *tau3 = 0;
+    error1 = theta1des - theta1motor;
+    error2 = theta2des - theta2motor;
+    error3 = theta3des - theta3motor;
+    Integral1 = Integralold1 +((error1-error1old)/2)*T;
+    Integral2 = Integralold2 +((error2-error2old)/2)*T;
+    Integral3 = Integralold3 +((error3-error3old)/2)*T;
+    error1old = error1;
+    error2old = error2;
+    error3old = error3;
+
+    if(error1 > 1) {
+        Integral1 = 0;
+        Integralold1 = 0;
+    }
+
+    if(error2 > 1) {
+            Integral2 = 0;
+            Integralold2 = 0;
+        }
+
+    if(error3 > 1 ) {
+            Integral3 = 0;
+            Integralold3 = 0;
+        }
+    //getting Omega values
+    Omega1 = (theta1motor - Theta1_old)/0.001;
+    Omega1 = (Omega1 + Omega1_old1 + Omega1_old2)/3.0;
+    Theta1_old = theta1motor;
+    //order matters here. Why??
+    Omega1_old2 = Omega1_old1;
+    Omega1_old1 = Omega1;
+
+    Omega2 = (theta2motor - Theta2_old)/0.001;
+    Omega2 = (Omega2 + Omega1_old2 + Omega2_old2)/3.0;
+    Theta2_old = theta2motor;
+    //order matters here. Why??
+    Omega2_old2 = Omega2_old1;
+    Omega2_old1 = Omega2;
+
+    Omega3 = (theta3motor - Theta3_old)/0.001;
+    Omega3 = (Omega3 + Omega3_old1 + Omega3_old2)/3.0;
+    Theta3_old = theta3motor;
+    //order matters here. Why??
+    Omega3_old2 = Omega3_old1;
+    Omega3_old1 = Omega3;
+
+    *tau1 = KP1*(theta1des-theta1motor)-KD1*Omega1 + Ki1 * Integral1;
+    *tau2 = KP2*(theta2des-theta2motor)-KD2*Omega2 + Ki2 * Integral2;
+    *tau3 = KP3*(theta3des-theta3motor)-KD3*Omega3 + Ki3 * Integral3;
 
     //Motor torque limitation(Max: 5 Min: -5)
+    if (*tau1 > 5) {
+        *tau1 = 5;
+    } else if(*tau1 < -5){
+        *tau1 = -5;
+    }
+
+    if (*tau2 > 5) {
+            *tau2 = 5;
+        } else if(*tau2 < -5) {
+            *tau2 = -5;
+        }
+    if (*tau3 > 5) {
+            *tau3 = 5;
+        } else  if(*tau3 < -5) {
+            *tau3 = -5;
+        }
 
     // save past states
     if ((mycount%50)==0) {
@@ -106,7 +218,7 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
     Simulink_PlotVar1 = theta1motor;
     Simulink_PlotVar2 = theta2motor;
     Simulink_PlotVar3 = theta3motor;
-    Simulink_PlotVar4 = 0;
+    Simulink_PlotVar4 = theta1des;
 
     x = (127.0*cos(theta1motor)*(cos(theta3motor) + sin(theta2motor)))/500.0;
     y = (127.0*sin(theta1motor)*(cos(theta3motor) + sin(theta2motor)))/500.0;
@@ -124,6 +236,9 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
     q3 = PI - thetag;
     desmotortheta3 = q3 + desmotortheta2 -PI/2;
 
+    theta1motorlast = theta1motor;
+    theta2motorlast = theta2motor;
+    theta3motorlast = theta3motor;
 
     mycount++;
 }
