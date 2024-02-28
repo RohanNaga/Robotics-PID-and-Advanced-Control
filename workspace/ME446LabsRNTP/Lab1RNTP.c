@@ -56,12 +56,6 @@ float thetay = 0;       // intermediate angle calculation for theta 2
 float d1 = .254;        // value for d1 in DH table
 float q2 = 0;
 float q3 = 0;
-float KP1 = 40;
-float KD1 = 1.7;
-float KP2 = 40;
-float KD2 = 2;
-float KP3 = 40;
-float KD3 = 1.7;
 float theta1des;
 float theta2des;
 float theta3des;
@@ -93,9 +87,18 @@ float Integral2 = 0;
 float Integralold3 = 0;
 float Integral3 = 0;
 float T = 0;
-float Ki1 = 0;
-float Ki2 = 0;
-float Ki3 = 0;
+float KP1 = 50;
+float KD1 = 2.35;
+float KP2 = 45;
+float KD2 = 2.1;
+float KP3 = 60;
+float KD3 = 1.55;
+float Ki1 = 300;
+float Ki2 = 800;
+float Ki3 = 1200;
+float threshold1 = .02;
+float threshold2 = .015;
+float threshold3 = .035;
 
 void mains_code(void);
 
@@ -127,24 +130,27 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
     error1 = theta1des - theta1motor;
     error2 = theta2des - theta2motor;
     error3 = theta3des - theta3motor;
-    Integral1 = Integralold1 +((error1-error1old)/2)*T;
-    Integral2 = Integralold2 +((error2-error2old)/2)*T;
-    Integral3 = Integralold3 +((error3-error3old)/2)*T;
+    Integral1 = Integralold1 +((error1+error1old)/2)*T;
+    Integral2 = Integralold2 +((error2+error2old)/2)*T;
+    Integral3 = Integralold3 +((error3+error3old)/2)*T;
+    Integralold1 = Integral1;
+    Integralold2 = Integral2;
+    Integralold3 = Integral3;
     error1old = error1;
     error2old = error2;
     error3old = error3;
 
-    if(error1 > .05) {
+    if(fabs(error1) > threshold1) {
         Integral1 = 0;
         Integralold1 = 0;
     }
 
-    if(error2 > .05) {
+    if(fabs(error2) > threshold2) {
             Integral2 = 0;
             Integralold2 = 0;
         }
 
-    if(error3 > .05) {
+    if(fabs(error3) > threshold3) {
             Integral3 = 0;
             Integralold3 = 0;
         }
