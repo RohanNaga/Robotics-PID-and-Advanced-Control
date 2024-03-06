@@ -95,10 +95,19 @@ float KP3 = 60;
 float KD3 = 1.55;
 float Ki1 = 300;
 float Ki2 = 800;
-float Ki3 = 1200;
+float Ki3 = 1400;
 float threshold1 = .02;
 float threshold2 = .015;
-float threshold3 = .035;
+float threshold3 = .015;
+float J1 = 0.0167;
+float J2 = 0.03;
+float J3 = 0.0128;
+float q = 0;
+float v = 0;
+float a = 0;
+float t = 0;
+float radius = 0.05;
+float w = 2;
 
 void mains_code(void);
 
@@ -116,15 +125,37 @@ void main(void)
 // This function is called every 1 ms
 void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float *tau2,float *tau3, int error) {
 
-    if (mycount % 2000 < 1000){
-        theta1des = 0;
-        theta2des = 0;
-        theta3des = 0;
-    } else {
-        theta1des = PI/6;
-        theta2des = PI/6;
-        theta3des = PI/6;
-    }
+    t = (mycount)/1000.0;
+    x = 0.35;
+    y = radius*cos(w*t);
+    z = radius*sin(w*t) + .3;
+
+    // Inverse Kinematic Equations
+    r = sqrt(x*x+y*y);              // r value taking the distance of the end-effector position from the origin to its position on the x0-y0 plane
+    h = sqrt(r*r+(z-d1)*(z-d1));        // hypotenuse of the triangle connecting end effector position, origin, and r value. Used to calculate theta1 and theta2
+    desmotortheta1 = atan2(y, x);       // motor 1 theta value from inverse kinematics. Theta1 in DH parameters and motor theta 1 are equal.
+    thetax = atan2(z-d1,r);         // portion of theta 2 value calculated
+    thetay = acos((h*h+len*len-len*len)/(2*len*h)); // second portion of theta 2 value calculated
+    theta2 = thetax+thetay;             // Theta 2 calculated by adding subsidiary theta values
+    desmotortheta2 = -theta2 + PI/2;            // motor theta 2 calculate
+    thetag = acos((-(h*h)+len*len+len*len)/(2*len*len));// complement of theta 3 angle used to calculate theta 3
+    theta3 = PI - thetag;               // theta 3 value calculated from thetag
+    desmotortheta3 = theta3 + desmotortheta2 -PI/2; // Motor theta 3 calculated from theta 3
+
+    theta1des = desmotortheta1;
+    theta2des = desmotortheta2;
+    theta3des = desmotortheta3;
+
+
+    //if (mycount % 2000 < 1000){
+    //   theta1des = 0;
+    //    theta2des = 0;
+    //    theta3des = 0;
+    //} else {
+    //    theta1des = PI/6;
+    //    theta2des = PI/6;
+    //    theta3des = PI/6;
+    //}
     T = 0.001;
 
     error1 = theta1des - theta1motor;
@@ -176,9 +207,25 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
     Omega3_old2 = Omega3_old1;
     Omega3_old1 = Omega3;
 
+
+    if (mycount % 2000 < 1000) {
+        q = - t*t*t + (3*t*t)/2;
+        v = - 3*t*t + 3*t;
+        a = 3 - 6*t;
+    } else {
+        q = t*t*t - (9*t*t)/2 + 6*t - 2;
+        v = 3*t*t - 9*t + 6;
+        a = 6*t - 9;
+    }
+    // PID Control
     *tau1 = KP1*(theta1des-theta1motor)-KD1*Omega1 + Ki1 * Integral1;
     *tau2 = KP2*(theta2des-theta2motor)-KD2*Omega2 + Ki2 * Integral2;
     *tau3 = KP3*(theta3des-theta3motor)-KD3*Omega3 + Ki3 * Integral3;
+
+    //Forward Feed control
+    //*tau1 = J1*a + KP1*(q-theta1motor)+KD1*(v-Omega1) + Ki1 * Integral1;
+    //*tau2 = J2*a + KP2*(q-theta2motor)+KD2*(v-Omega2) + Ki2 * Integral2;
+    //*tau3 = J3*a + KP3*(q-theta3motor)+KD3*(v-Omega3) + Ki3 * Integral3;
 
     //Motor torque limitation(Max: 5 Min: -5)
     if (*tau1 > 5) {
@@ -221,42 +268,20 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
     printtheta2motor = theta2motor;		// utilized to print theta 2 value
     printtheta3motor = theta3motor;		// utilized to print theta 3 value
 
-    Simulink_PlotVar1 = theta1motor;
-    Simulink_PlotVar2 = theta2motor;
-    Simulink_PlotVar3 = theta3motor;
-    Simulink_PlotVar4 = theta1des;
+    Simulink_PlotVar1 = theta1des;
+    Simulink_PlotVar2 = theta2des;
+    Simulink_PlotVar3 = theta3des;
+    Simulink_PlotVar4 = y;
 
-    x = (127.0*cos(theta1motor)*(cos(theta3motor) + sin(theta2motor)))/500.0;
-    y = (127.0*sin(theta1motor)*(cos(theta3motor) + sin(theta2motor)))/500.0;
-    z = (127.0*cos(theta2motor))/500 - (127*sin(theta3motor))/500 + 127.0/500.0;
-
-
-    r = sqrt(x*x+y*y);
-    h = sqrt(r*r+(z-d1)*(z-d1));
-    desmotortheta1 = atan2(y, x);
-    thetax = atan2(z-d1,r);
-    thetay = acos((h*h+len*len-len*len)/(2*h*len));
-    q2 = thetax+thetay;
-    desmotortheta2 = -q2 + PI/2;
-    thetag = acos((-(h*h)+len*len+len*len)/(2*len*len));
-    q3 = PI - thetag;
-    desmotortheta3 = q3 + desmotortheta2 -PI/2;
+    //x = (127.0*cos(theta1motor)*(cos(theta3motor) + sin(theta2motor)))/500.0;
+    //y = (127.0*sin(theta1motor)*(cos(theta3motor) + sin(theta2motor)))/500.0;
+    //z = (127.0*cos(theta2motor))/500 - (127*sin(theta3motor))/500 + 127.0/500.0;
 
     theta1motorlast = theta1motor;
     theta2motorlast = theta2motor;
     theta3motorlast = theta3motor;
 
-	// Inverse Kinematic Equations
-    r = sqrt(x*x+y*y);				// r value taking the distance of the end-effector position from the origin to its position on the x0-y0 plane
-    h = sqrt(r*r+(z-d1)*(z-d1));		// hypotenuse of the triangle connecting end effector position, origin, and r value. Used to calculate theta1 and theta2
-    desmotortheta1 = atan2(y, x);		// motor 1 theta value from inverse kinematics. Theta1 in DH parameters and motor theta 1 are equal.
-    thetax = atan2(z-d1,r);			// portion of theta 2 value calculated
-    thetay = acos((h*h+len*len-len*len)/(2*h*len));	// second portion of theta 2 value calculated
-    theta2 = thetax+thetay;				// Theta 2 calculated by adding subsidiary theta values
-    desmotortheta2 = -theta2 + PI/2;			// motor theta 2 calculate
-    thetag = acos((-(h*h)+len*len+len*len)/(2*len*len));// complement of theta 3 angle used to calculate theta 3
-    theta3 = PI - thetag;				// theta 3 value calculated from thetag
-    desmotortheta3 = theta3 + desmotortheta2 -PI/2;	// Motor theta 3 calculated from theta 3
+
     mycount++;
 }
 
