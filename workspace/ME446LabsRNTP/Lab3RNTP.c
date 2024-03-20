@@ -109,6 +109,79 @@ float t = 0;
 float radius = 0.05;
 float w = 2;
 
+float minimum_velocity1 = 0.1;
+float Viscous_positive1 = .185;
+float Coulomb_positive1 = .18;
+float Viscous_negative1 = .2;
+float Coulomb_negative1 = -.25;
+float slope_between_minimums1 = 3.6;
+
+float minimum_velocity2 = 0.05;
+float Viscous_positive2 = .3;
+float Coulomb_positive2 = .4759;
+float Viscous_negative2 = .31;
+float Coulomb_negative2 = -.51;
+float slope_between_minimums2 = 5;
+
+float minimum_velocity3 = 0.05;
+float Viscous_positive3 = .26;
+float Coulomb_positive3 = .5339;
+float Viscous_negative3 = .28;
+float Coulomb_negative3 = -.5190;
+float slope_between_minimums3 = 5;
+
+float u_fric1 = 0;
+float u_fric2 = 0;
+float u_fric3 = 0;
+
+float ff1 = .55;
+float ff2 = 75;
+float ff3 = .8;
+
+float cosq1 = 0;
+float sinq1 = 0;
+float cosq2 = 0;
+float sinq2 = 0;
+float cosq3 = 0;
+float sinq3 = 0;
+float JT_11 = 0;
+float JT_12 = 0;
+float JT_13 = 0;
+float JT_21 = 0;
+float JT_22 = 0;
+float JT_23 = 0;
+float JT_31 = 0;
+float JT_32 = 0;
+float JT_33 = 0;
+float cosz = 0;
+float sinz = 0;
+float cosx = 0;
+float sinx = 0;
+float cosy = 0;
+float siny = 0;
+float thetaz = 0;
+float thetax = 0;
+float thetay = 0;
+float R11 = 0;
+float R12 = 0;
+float R13 = 0;
+float R21 = 0;
+float R22 = 0;
+float R23 = 0;
+float R31 = 0;
+float R32 = 0;
+float R33 = 0;
+float RT11 = 0;
+float RT12 = 0;
+float RT13 = 0;
+float RT21 = 0;
+float RT22 = 0;
+float RT23 = 0;
+float RT31 = 0;
+float RT32 = 0;
+float RT33 = 0;
+
+
 void mains_code(void);
 
 //
@@ -125,107 +198,105 @@ void main(void)
 // This function is called every 1 ms
 void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float *tau2,float *tau3, int error) {
 
-    t = (mycount)/1000.0;
-    x = 0.35;
-    y = radius*cos(w*t);
-    z = radius*sin(w*t) + .3;
 
-    // Inverse Kinematic Equations
-    r = sqrt(x*x+y*y);              // r value taking the distance of the end-effector position from the origin to its position on the x0-y0 plane
-    h = sqrt(r*r+(z-d1)*(z-d1));        // hypotenuse of the triangle connecting end effector position, origin, and r value. Used to calculate theta1 and theta2
-    desmotortheta1 = atan2(y, x);       // motor 1 theta value from inverse kinematics. Theta1 in DH parameters and motor theta 1 are equal.
-    thetax = atan2(z-d1,r);         // portion of theta 2 value calculated
-    thetay = acos((h*h+len*len-len*len)/(2*len*h)); // second portion of theta 2 value calculated
-    theta2 = thetax+thetay;             // Theta 2 calculated by adding subsidiary theta values
-    desmotortheta2 = -theta2 + PI/2;            // motor theta 2 calculate
-    thetag = acos((-(h*h)+len*len+len*len)/(2*len*len));// complement of theta 3 angle used to calculate theta 3
-    theta3 = PI - thetag;               // theta 3 value calculated from thetag
-    desmotortheta3 = theta3 + desmotortheta2 -PI/2; // Motor theta 3 calculated from theta 3
-
-    theta1des = desmotortheta1;
-    theta2des = desmotortheta2;
-    theta3des = desmotortheta3;
-
-
-    //if (mycount % 2000 < 1000){
-    //   theta1des = 0;
-    //    theta2des = 0;
-    //    theta3des = 0;
-    //} else {
-    //    theta1des = PI/6;
-    //    theta2des = PI/6;
-    //    theta3des = PI/6;
-    //}
-    T = 0.001;
-
-    error1 = theta1des - theta1motor;
-    error2 = theta2des - theta2motor;
-    error3 = theta3des - theta3motor;
-    Integral1 = Integralold1 +((error1+error1old)/2)*T;
-    Integral2 = Integralold2 +((error2+error2old)/2)*T;
-    Integral3 = Integralold3 +((error3+error3old)/2)*T;
-    Integralold1 = Integral1;
-    Integralold2 = Integral2;
-    Integralold3 = Integral3;
-    error1old = error1;
-    error2old = error2;
-    error3old = error3;
-
-    if(fabs(error1) > threshold1) {
-        Integral1 = 0;
-        Integralold1 = 0;
-    }
-
-    if(fabs(error2) > threshold2) {
-            Integral2 = 0;
-            Integralold2 = 0;
-        }
-
-    if(fabs(error3) > threshold3) {
-            Integral3 = 0;
-            Integralold3 = 0;
-        }
     //getting Omega values
-    Omega1 = (theta1motor - Theta1_old)/0.001;
-    Omega1 = (Omega1 + Omega1_old1 + Omega1_old2)/3.0;
-    Theta1_old = theta1motor;
-    //order matters here. Why??
-    Omega1_old2 = Omega1_old1;
-    Omega1_old1 = Omega1;
+        Omega1 = (theta1motor - Theta1_old)/0.001;
+        Omega1 = (Omega1 + Omega1_old1 + Omega1_old2)/3.0;
+        Theta1_old = theta1motor;
+        //order matters here. Why??
+        Omega1_old2 = Omega1_old1;
+        Omega1_old1 = Omega1;
 
-    Omega2 = (theta2motor - Theta2_old)/0.001;
-    Omega2 = (Omega2 + Omega2_old1 + Omega2_old2)/3.0;
-    Theta2_old = theta2motor;
-    //order matters here. Why??
-    Omega2_old2 = Omega2_old1;
-    Omega2_old1 = Omega2;
+        Omega2 = (theta2motor - Theta2_old)/0.001;
+        Omega2 = (Omega2 + Omega2_old1 + Omega2_old2)/3.0;
+        Theta2_old = theta2motor;
+        //order matters here. Why??
+        Omega2_old2 = Omega2_old1;
+        Omega2_old1 = Omega2;
 
-    Omega3 = (theta3motor - Theta3_old)/0.001;
-    Omega3 = (Omega3 + Omega3_old1 + Omega3_old2)/3.0;
-    Theta3_old = theta3motor;
-    //order matters here. Why??
-    Omega3_old2 = Omega3_old1;
-    Omega3_old1 = Omega3;
+        Omega3 = (theta3motor - Theta3_old)/0.001;
+        Omega3 = (Omega3 + Omega3_old1 + Omega3_old2)/3.0;
+        Theta3_old = theta3motor;
+        //order matters here. Why??
+        Omega3_old2 = Omega3_old1;
+        Omega3_old1 = Omega3;
 
-
-    if (mycount % 2000 < 1000) {
-        q = - t*t*t + (3*t*t)/2;
-        v = - 3*t*t + 3*t;
-        a = 3 - 6*t;
+    if (Omega1 > minimum_velocity1) {
+        u_fric1 = Viscous_positive1*Omega1 + Coulomb_positive1;
+    } else if (Omega1 < -minimum_velocity1) {
+        u_fric1 = Viscous_negative1*Omega1 + Coulomb_negative1;
     } else {
-        q = t*t*t - (9*t*t)/2 + 6*t - 2;
-        v = 3*t*t - 9*t + 6;
-        a = 6*t - 9;
+        u_fric1 = slope_between_minimums1*Omega1;
     }
+
+    if (Omega2 > minimum_velocity2) {
+            u_fric2 = Viscous_positive2*Omega2 + Coulomb_positive2;
+        } else if (Omega2 < -minimum_velocity2) {
+            u_fric2 = Viscous_negative2*Omega2 + Coulomb_negative2;
+        } else {
+            u_fric2 = slope_between_minimums2*Omega2;
+        }
+
+    if (Omega3 > minimum_velocity3) {
+            u_fric3 = Viscous_positive3*Omega3 + Coulomb_positive3;
+        } else if (Omega3 < -minimum_velocity3) {
+            u_fric3 = Viscous_negative3*Omega3 + Coulomb_negative3;
+        } else {
+            u_fric3 = slope_between_minimums3*Omega3;
+        }
+
+
+    //Inverse Dynamics Control
+
+    //Rotation zxy and its Transpose
+    cosz = cos(thetaz);
+    sinz = sin(thetaz);
+    cosx = cos(thetax);
+    sinx = sin(thetax);
+    cosy = cos(thetay);
+    siny = sin(thetay);
+    RT11 = R11 = cosz*cosy-sinz*sinx*siny;
+    RT21 = R12 = -sinz*cosx;
+    RT31 = R13 = cosz*siny+sinz*sinx*cosy;
+    RT12 = R21 = sinz*cosy+cosz*sinx*siny;
+    RT22 = R22 = cosz*cosx;
+    RT32 = R23 = sinz*siny-cosz*sinx*cosy;
+    RT13 = R31 = -cosx*siny;
+    RT23 = R32 = sinx;
+    RT33 = R33 = cosx*cosy;
+    // Jacobian Transpose
+    cosq1 = cos(theta1motor);
+    sinq1 = sin(theta1motor);
+    cosq2 = cos(theta2motor);
+    sinq2 = sin(theta2motor);
+    cosq3 = cos(theta3motor);
+    sinq3 = sin(theta3motor);
+    JT_11 = -0.254*sinq1*(cosq3 + sinq2);
+    JT_12 = 0.254*cosq1*(cosq3 + sinq2);
+    JT_13 = 0;
+    JT_21 = 0.254*cosq1*(cosq2 - sinq3);
+    JT_22 = 0.254*sinq1*(cosq2 - sinq3);
+    JT_23 = -0.254*(cosq3 + sinq2);
+    JT_31 = -0.254*cosq1*sinq3;
+    JT_32 = -0.254*sinq1*sinq3;
+    JT_33 = -0.254*cosq3;
+
+    *tau1 = JT_11*(KPX*())
+
+    //Friction Control
+    //*tau1 = ff1*u_fric1;
+    //*tau2 = ff2*u_fric2;
+    //*tau3 = ff3*u_fric3;
+
     // PID Control
-    *tau1 = KP1*(theta1des-theta1motor)-KD1*Omega1 + Ki1 * Integral1;
-    *tau2 = KP2*(theta2des-theta2motor)-KD2*Omega2 + Ki2 * Integral2;
-    *tau3 = KP3*(theta3des-theta3motor)-KD3*Omega3 + Ki3 * Integral3;
+    //*tau1 = KP1*(theta1des-theta1motor)-KD1*Omega1 + Ki1 * Integral1;
+    //*tau2 = KP2*(theta2des-theta2motor)-KD2*Omega2 + Ki2 * Integral2;
+    //*tau3 = KP3*(theta3des-theta3motor)-KD3*Omega3 + Ki3 * Integral3;
 
     //Forward Feed control
-    //*tau1 = J1*a + KP1*(q-theta1motor)+KD1*(v-Omega1) + Ki1 * Integral1;
-    //*tau2 = J2*a + KP2*(q-theta2motor)+KD2*(v-Omega2) + Ki2 * Integral2;
-    //*tau3 = J3*a + KP3*(q-theta3motor)+KD3*(v-Omega3) + Ki3 * Integral3;
+    *tau1 = J1*a + KP1*(q-theta1motor)+KD1*(v-Omega1) + Ki1 * Integral1;
+    *tau2 = J2*a + KP2*(q-theta2motor)+KD2*(v-Omega2) + Ki2 * Integral2;
+    *tau3 = J3*a + KP3*(q-theta3motor)+KD3*(v-Omega3) + Ki3 * Integral3;
 
     //Motor torque limitation(Max: 5 Min: -5)
     if (*tau1 > 5) {
