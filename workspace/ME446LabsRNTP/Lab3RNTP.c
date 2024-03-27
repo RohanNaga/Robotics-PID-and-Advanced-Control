@@ -51,8 +51,6 @@ float desmotortheta2 = 0;   // calculated motor theta 2 from inverse kinematics
 float desmotortheta3 = 0;   // calculated motor theta 3 from inverse kinematics
 float thetag = 0;       // intermediate theta calculation to calculate theta 3
 float h = 0;            // hypotenuse of the triangle connecting end effector position, origin, and r value. Used to calculate theta1 and theta2
-float thetax = 0;       // intermediate angle calculation for theta 2
-float thetay = 0;       // intermediate angle calculation for theta 2
 float d1 = .254;        // value for d1 in DH table
 float q2 = 0;
 float q3 = 0;
@@ -135,7 +133,7 @@ float u_fric2 = 0;
 float u_fric3 = 0;
 
 float ff1 = .55;
-float ff2 = 75;
+float ff2 = .75;
 float ff3 = .8;
 
 float cosq1 = 0;
@@ -180,6 +178,37 @@ float RT23 = 0;
 float RT31 = 0;
 float RT32 = 0;
 float RT33 = 0;
+float JT_1[3];
+float JT_2[3];
+float JT_3[3];
+float KPxyz[3];
+
+float x_old = 0;
+float xdot_old1 = 0;
+float xdot_old2 = 0;
+float y_old = 0;
+float ydot_old1 = 0;
+float ydot_old2 = 0;
+float z_old = 0;
+float zdot_old1 = 0;
+float zdot_old2 = 0;
+
+float xd = 0;
+float yd = 0;
+float zd = 0;
+float xd_dot = 0;
+float yd_dot = 0;
+float zd_dot = 0;
+float xdot = 0;
+float ydot = 0;
+float zdot = 0;
+
+float KPx = 175;
+float KDx = 14;
+float KPy = 150;
+float KDy = 12;
+float KPz = 150;
+float KDz = 5;
 
 
 void mains_code(void);
@@ -230,25 +259,62 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
     }
 
     if (Omega2 > minimum_velocity2) {
-            u_fric2 = Viscous_positive2*Omega2 + Coulomb_positive2;
-        } else if (Omega2 < -minimum_velocity2) {
-            u_fric2 = Viscous_negative2*Omega2 + Coulomb_negative2;
-        } else {
-            u_fric2 = slope_between_minimums2*Omega2;
-        }
+        u_fric2 = Viscous_positive2*Omega2 + Coulomb_positive2;
+    } else if (Omega2 < -minimum_velocity2) {
+        u_fric2 = Viscous_negative2*Omega2 + Coulomb_negative2;
+    } else {
+        u_fric2 = slope_between_minimums2*Omega2;
+    }
 
     if (Omega3 > minimum_velocity3) {
-            u_fric3 = Viscous_positive3*Omega3 + Coulomb_positive3;
-        } else if (Omega3 < -minimum_velocity3) {
-            u_fric3 = Viscous_negative3*Omega3 + Coulomb_negative3;
-        } else {
-            u_fric3 = slope_between_minimums3*Omega3;
-        }
+        u_fric3 = Viscous_positive3*Omega3 + Coulomb_positive3;
+    } else if (Omega3 < -minimum_velocity3) {
+        u_fric3 = Viscous_negative3*Omega3 + Coulomb_negative3;
+    } else {
+        u_fric3 = slope_between_minimums3*Omega3;
+    }
 
 
-    //Inverse Dynamics Control
+    //Forward Kinematics
+    x = .254*cos(theta1motor)*(cos(theta3motor)+sin(theta2motor));
+    y = .254*sin(theta1motor)*(cos(theta3motor)+sin(theta2motor));
+    z = .254*(1+cos(theta2motor)-sin(theta3motor));
+    if (mycount % 2000 < 1000){
+        xd = .25;
+        yd = 0;
+        zd = .5;
+    } else {
+        xd = .5;
+        yd = 0;
+        zd = .5;
+    }
+    xd_dot = 0;
+    yd_dot = 0;
+    zd_dot = 0;
 
-    //Rotation zxy and its Transpose
+    //Finding x,y,z dot
+    xdot = (x - x_old)/0.001;
+    xdot = (xdot + xdot_old1 + xdot_old2)/3.0;
+    x_old = x;
+    //order matters here. Why??
+    xdot_old2 = xdot_old1;
+    xdot_old1 = xdot;
+
+    ydot = (y - y_old)/0.001;
+    ydot = (ydot + ydot_old1 + ydot_old2)/3.0;
+    y_old = y;
+    //order matters here. Why??
+    ydot_old2 = ydot_old1;
+    ydot_old1 = ydot;
+
+    zdot = (z - z_old)/0.001;
+    zdot = (zdot + zdot_old1 + zdot_old2)/3.0;
+    z_old = z;
+    //order matters here. Why??
+    zdot_old2 = zdot_old1;
+    zdot_old1 = zdot;
+
+    //Rotation xyz and its Transpose
     cosz = cos(thetaz);
     sinz = sin(thetaz);
     cosx = cos(thetax);
@@ -264,7 +330,8 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
     RT13 = R31 = -cosx*siny;
     RT23 = R32 = sinx;
     RT33 = R33 = cosx*cosy;
-    // Jacobian Transpose
+
+    //Jacobian Transpose
     cosq1 = cos(theta1motor);
     sinq1 = sin(theta1motor);
     cosq2 = cos(theta2motor);
@@ -280,8 +347,25 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
     JT_31 = -0.254*cosq1*sinq3;
     JT_32 = -0.254*sinq1*sinq3;
     JT_33 = -0.254*cosq3;
+    JT_1[0] = JT_11;
+    JT_1[1] = JT_12;
+    JT_1[2] = JT_13;
+    JT_2[0] = JT_21;
+    JT_2[1] = JT_22;
+    JT_2[2] = JT_23;
+    JT_3[0] = JT_31;
+    JT_3[1] = JT_32;
+    JT_3[2] = JT_33;
 
-    *tau1 = JT_11*(KPX*())
+
+    KPxyz[0] = KPx*(xd-x)+KDx*(xd_dot-xdot);
+    KPxyz[1] = KPy*(yd-y)+KDy*(yd_dot-ydot);
+    KPxyz[2] = KPz*(zd-z)+KDz*(zd_dot-zdot);
+
+    // Task Space PD Control with friction accounted for
+    *tau1 = JT_1[0]*KPxyz[0]+JT_1[1]*KPxyz[1]+JT_1[2]*KPxyz[2]+ff1*u_fric1;
+    *tau2 = JT_2[0]*KPxyz[0]+JT_2[1]*KPxyz[1]+JT_2[2]*KPxyz[2]+ff2*u_fric2;
+    *tau3 = JT_3[0]*KPxyz[0]+JT_3[1]*KPxyz[1]+JT_3[2]*KPxyz[2]+ff3*u_fric3;
 
     //Friction Control
     //*tau1 = ff1*u_fric1;
@@ -294,9 +378,9 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
     //*tau3 = KP3*(theta3des-theta3motor)-KD3*Omega3 + Ki3 * Integral3;
 
     //Forward Feed control
-    *tau1 = J1*a + KP1*(q-theta1motor)+KD1*(v-Omega1) + Ki1 * Integral1;
-    *tau2 = J2*a + KP2*(q-theta2motor)+KD2*(v-Omega2) + Ki2 * Integral2;
-    *tau3 = J3*a + KP3*(q-theta3motor)+KD3*(v-Omega3) + Ki3 * Integral3;
+    //*tau1 = J1*a + KP1*(q-theta1motor)+KD1*(v-Omega1) + Ki1 * Integral1;
+    //*tau2 = J2*a + KP2*(q-theta2motor)+KD2*(v-Omega2) + Ki2 * Integral2;
+    //*tau3 = J3*a + KP3*(q-theta3motor)+KD3*(v-Omega3) + Ki3 * Integral3;
 
     //Motor torque limitation(Max: 5 Min: -5)
     if (*tau1 > 5) {
@@ -339,14 +423,10 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
     printtheta2motor = theta2motor;		// utilized to print theta 2 value
     printtheta3motor = theta3motor;		// utilized to print theta 3 value
 
-    Simulink_PlotVar1 = theta1des;
-    Simulink_PlotVar2 = theta2des;
-    Simulink_PlotVar3 = theta3des;
-    Simulink_PlotVar4 = y;
-
-    //x = (127.0*cos(theta1motor)*(cos(theta3motor) + sin(theta2motor)))/500.0;
-    //y = (127.0*sin(theta1motor)*(cos(theta3motor) + sin(theta2motor)))/500.0;
-    //z = (127.0*cos(theta2motor))/500 - (127*sin(theta3motor))/500 + 127.0/500.0;
+    Simulink_PlotVar1 = x;
+    Simulink_PlotVar2 = y;
+    Simulink_PlotVar3 = *tau1;
+    Simulink_PlotVar4 = *tau2;
 
     theta1motorlast = theta1motor;
     theta2motorlast = theta2motor;
