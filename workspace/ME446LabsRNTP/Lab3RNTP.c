@@ -205,11 +205,20 @@ float zdot = 0;
 
 float KPx = 175;
 float KDx = 14;
-float KPy = 150;
-float KDy = 12;
+float KPy = 170;
+float KDy = 14;
 float KPz = 150;
-float KDz = 5;
+float KDz = 11;
 
+float KPxn = 175;
+float KPyn = 170;
+float KPzn = 150;
+float KDxn = 14;
+float KDyn = 14;
+float KDzn = 11;
+
+float Fzcmd = 0;
+float Kt =  6;
 
 void mains_code(void);
 
@@ -279,15 +288,21 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
     x = .254*cos(theta1motor)*(cos(theta3motor)+sin(theta2motor));
     y = .254*sin(theta1motor)*(cos(theta3motor)+sin(theta2motor));
     z = .254*(1+cos(theta2motor)-sin(theta3motor));
+    /*
     if (mycount % 2000 < 1000){
-        xd = .25;
+        xd = .2;
         yd = 0;
         zd = .5;
     } else {
-        xd = .5;
-        yd = 0;
-        zd = .5;
+        xd = .25;
+        yd = .25;
+        zd = .44;
     }
+    */
+    xd = .2;
+    yd = 0;
+    zd = .5;
+
     xd_dot = 0;
     yd_dot = 0;
     zd_dot = 0;
@@ -362,10 +377,17 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
     KPxyz[1] = KPy*(yd-y)+KDy*(yd_dot-ydot);
     KPxyz[2] = KPz*(zd-z)+KDz*(zd_dot-zdot);
 
-    // Task Space PD Control with friction accounted for
-    *tau1 = JT_1[0]*KPxyz[0]+JT_1[1]*KPxyz[1]+JT_1[2]*KPxyz[2]+ff1*u_fric1;
-    *tau2 = JT_2[0]*KPxyz[0]+JT_2[1]*KPxyz[1]+JT_2[2]*KPxyz[2]+ff2*u_fric2;
-    *tau3 = JT_3[0]*KPxyz[0]+JT_3[1]*KPxyz[1]+JT_3[2]*KPxyz[2]+ff3*u_fric3;
+
+    // Simple Impedence Control
+    *tau1 = (JT_1[0]*R11+JT_1[1]*R21+JT_1[2]*R31)*(KPxn*RT11*(xd-x)+KDxn*RT11*(xd_dot-xdot))+ff1*u_fric1;
+    *tau2 = (JT_2[0]*R12+JT_2[1]*R22+JT_2[2]*R32)*(KPyn*RT22*(yd-y)+KDyn*RT22*(yd_dot-ydot))+ff2*u_fric2;;
+    *tau3 = (JT_3[0]*R13+JT_3[1]*R23+JT_3[2]*R33)*(KPzn*RT33*(zd-z)+KDzn*RT33*(zd_dot-zdot))+ff3*u_fric3;;
+
+
+    // Task Space PD Control with friction accounted for with feed forward control
+    //*tau1 = JT_1[0]*KPxyz[0]+JT_1[1]*KPxyz[1]+JT_1[2]*KPxyz[2]+ff1*u_fric1+JT_1[2]*Fzcmd/Kt;
+    //*tau2 = JT_2[0]*KPxyz[0]+JT_2[1]*KPxyz[1]+JT_2[2]*KPxyz[2]+ff2*u_fric2+JT_2[2]*Fzcmd/Kt;
+    //*tau3 = JT_3[0]*KPxyz[0]+JT_3[1]*KPxyz[1]+JT_3[2]*KPxyz[2]+ff3*u_fric3+JT_3[2]*Fzcmd/Kt;
 
     //Friction Control
     //*tau1 = ff1*u_fric1;
@@ -425,7 +447,7 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
 
     Simulink_PlotVar1 = x;
     Simulink_PlotVar2 = y;
-    Simulink_PlotVar3 = *tau1;
+    Simulink_PlotVar3 = z;
     Simulink_PlotVar4 = *tau2;
 
     theta1motorlast = theta1motor;
