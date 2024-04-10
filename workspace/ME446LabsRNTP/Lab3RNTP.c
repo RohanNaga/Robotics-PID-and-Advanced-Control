@@ -220,6 +220,11 @@ float KDzn = 11;
 float Fzcmd = 0;
 float Kt =  6;
 
+float taux = 0;
+float tauy = 0;
+float tauz = 0;
+
+
 void mains_code(void);
 
 //
@@ -227,7 +232,7 @@ void mains_code(void);
 //
 void main(void)
 {
-	mains_code();
+    mains_code();
 }
 
 
@@ -299,7 +304,7 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
         zd = .44;
     }
     */
-    xd = .2;
+    xd = .3;
     yd = 0;
     zd = .5;
 
@@ -377,11 +382,22 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
     KPxyz[1] = KPy*(yd-y)+KDy*(yd_dot-ydot);
     KPxyz[2] = KPz*(zd-z)+KDz*(zd_dot-zdot);
 
+    float e1 = (xd-x);
+    float e2 = (yd-y);
+    float e3 = (zd-z);
+
+    float edot1 = (xd_dot-xdot);
+    float edot2 = (yd_dot-ydot);
+    float edot3 = (zd_dot-zdot);
+
+    taux = KPx*RT11*e1 + KPx*RT12*e2 + KPx*RT13*e3 + KDx*RT11*edot1 + KDx*RT12*edot2 + KDx*RT13*edot3;
+    tauy = KPy*RT21*e1 + KPy*RT22*e2 + KPy*RT23*e3 + KDy*RT21*edot1 + KDy*RT22*edot2 + KDy*RT23*edot3;
+    tauz = KPz*RT31*e1 + KPz*RT32*e2 + KPz*RT33*e3 + KDz*RT31*edot1 + KDz*RT32*edot2 + KDz*RT33*edot3;
 
     // Simple Impedence Control
-    *tau1 = (JT_1[0]*R11+JT_1[1]*R21+JT_1[2]*R31)*(KPxn*RT11*(xd-x)+KDxn*RT11*(xd_dot-xdot))+ff1*u_fric1;
-    *tau2 = (JT_2[0]*R12+JT_2[1]*R22+JT_2[2]*R32)*(KPyn*RT22*(yd-y)+KDyn*RT22*(yd_dot-ydot))+ff2*u_fric2;;
-    *tau3 = (JT_3[0]*R13+JT_3[1]*R23+JT_3[2]*R33)*(KPzn*RT33*(zd-z)+KDzn*RT33*(zd_dot-zdot))+ff3*u_fric3;;
+    *tau1 = ((JT_11*R11+JT_12*R21+JT_13*R31)*taux+(JT_11*R12+JT_12*R22+JT_13*R32)*tauy+(JT_11*R13+JT_12*R23+JT_13*R33)*tauz)+ff1*u_fric1;
+    *tau2 = ((JT_21*R11+JT_22*R21+JT_23*R31)*taux+(JT_21*R12+JT_22*R22+JT_23*R32)*tauy+(JT_21*R13+JT_22*R23+JT_23*R33)*tauz)+ff2*u_fric2;;
+    *tau3 = ((JT_31*R11+JT_32*R21+JT_33*R31)*taux+(JT_31*R12+JT_32*R22+JT_33*R32)*tauy+(JT_31*R13+JT_32*R23+JT_33*R33)*tauz)+ff3*u_fric3;;
 
 
     // Task Space PD Control with friction accounted for with feed forward control
@@ -446,9 +462,9 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
     printtheta3motor = theta3motor;		// utilized to print theta 3 value
 
     Simulink_PlotVar1 = x;
-    Simulink_PlotVar2 = y;
-    Simulink_PlotVar3 = z;
-    Simulink_PlotVar4 = *tau2;
+    Simulink_PlotVar2 = xd;
+    Simulink_PlotVar3 = yd;
+    Simulink_PlotVar4 = zd;
 
     theta1motorlast = theta1motor;
     theta2motorlast = theta2motor;
