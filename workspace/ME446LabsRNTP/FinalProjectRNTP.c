@@ -203,11 +203,11 @@ float xdot = 0;
 float ydot = 0;
 float zdot = 0;
 
-float KPx = 175;
-float KDx = 14;
-float KPy = 170;
-float KDy = 14;
-float KPz = 150;
+float KPx = 800;
+float KDx = 11;
+float KPy = 500;
+float KDy = 11;
+float KPz = 400;
 float KDz = 11;
 
 float KPxn = 175;
@@ -224,15 +224,16 @@ float taux = 0;
 float tauy = 0;
 float tauz = 0;
 
-float xa = .25;
+float xa = 0.14;
 float ya = 0;
-float za = .5;
+float za = 0.43;
 
-float xb = .45;
+float xb = .254;
 float yb = 0;
-float zb = .5;
+float zb = .508;
 float t_start = 0;
-float t_total = 5;
+float t_total = 2;
+
 
 void mains_code(void);
 
@@ -244,11 +245,38 @@ void main(void)
     mains_code();
 }
 
-
+typedef struct waypoints {
+    float x;
+    float y;
+    float z;
+}point;
 
 
 // This function is called every 1 ms
 void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float *tau2,float *tau3, int error) {
+    point start = {.254,0,.508};
+    point above_sun = {0.05,0.1,0.69};
+    point above_peghole = {0.0314,0.3538,0.3};
+    point in_peghole = {0.0314,0.3538,0.12};
+    point out_peghole = {0.0314,0.3538,0.3};
+    point peghole_to_zigzag = {0.28,0.05,0.39};
+    point align_zigzag = {0.4044,0.0854,0.3};
+    point start_zigzag = {0.4044,0.0854,0.1982};
+    point through_zigzag1 = {0.4189,0.0617,0.1982};
+    point through_zigzag2 = {0.42,0.05,0.1982};
+    point through_zigzag3 = {0.4198,0.0493,0.1982};
+    point through_zigzag4 = {0.4061,0.0384,0.1982};
+    point through_zigzag5 = {0.3423,0.0497,0.1982};
+    point through_zigzag6 = {0.3334,0.0446,0.1982};
+    point through_zigzag7 = {0.3281,0.0323,0.1982};
+    point through_zigzag8 = {0.3795,-0.0299,0.1982};
+    point out_zigzag = {0.3795,-0.0299,0.35};
+    point start_egg = {0.41,0.07,0.3};
+    point end_egg = {0,0,0};
+    point final_pos = {0,0,0};
+
+    point waypoints [] = {start, above_sun, above_peghole, in_peghole, out_peghole, peghole_to_zigzag, align_zigzag, start_zigzag, through_zigzag1,through_zigzag2, through_zigzag3, through_zigzag4, through_zigzag5, through_zigzag6, through_zigzag7, through_zigzag8, out_zigzag, start_egg, end_egg, final_pos};
+
 
 
     //getting Omega values
@@ -302,42 +330,30 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
     x = .254*cos(theta1motor)*(cos(theta3motor)+sin(theta2motor));
     y = .254*sin(theta1motor)*(cos(theta3motor)+sin(theta2motor));
     z = .254*(1+cos(theta2motor)-sin(theta3motor));
-    /*
-    if (mycount % 2000 < 1000){
-        xd = .2;
-        yd = 0;
-        zd = .5;
-    } else {
-        xd = .25;
-        yd = .25;
-        zd = .44;
-    }
-    */
-    t = mycount/1000.0;
 
+    t = mycount/1000.0;
+    int waypoint_count = t/t_total;
     float deltax = xb - xa;
     float deltay = yb - ya;
     float deltaz = zb - za;
     float t_percent = (t-t_start)/t_total;
 
-    if (t-t_start < t_total/2) {
-        xd = deltax*2*t_percent+xa;
-        yd = deltay*2*t_percent+ya;
-        zd = deltaz*2*t_percent+za;
+    if (t-t_start < t_total) {
+        xd = deltax*t_percent+xa;
+        yd = deltay*t_percent+ya;
+        zd = deltaz*t_percent+za;
 
-        xd_dot = deltax/(2*t_total);
-        yd_dot = deltay/(2*t_total);
-        zd_dot = deltaz/(2*t_total);
-    } else if (t-t_start < t_total){
-        xd = deltax*(1-2*t_percent)+xb;
-        yd = deltay*(1-2*t_percent)+yb;
-        zd = deltaz*(1-2*t_percent)+zb;
-
-        xd_dot = -deltax/(2*t_total);
-        yd_dot = -deltay/(2*t_total);
-        zd_dot = -deltaz/(2*t_total);
+        xd_dot = deltax/(t_total);
+        yd_dot = deltay/(t_total);
+        zd_dot = deltaz/(t_total);
     } else {
         t_start = t;
+        xa = xb;
+        ya = yb;
+        za = zb;
+        xb = waypoints[waypoint_count].x;
+        yb = waypoints[waypoint_count].y;
+        zb = waypoints[waypoint_count].z;
     }
 
     //Finding x,y,z dot
@@ -489,10 +505,10 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
     printtheta2motor = y;		// utilized to print theta 2 value
     printtheta3motor = z;		// utilized to print theta 3 value
 
-    Simulink_PlotVar1 = z;
-    Simulink_PlotVar2 = zd;
-    Simulink_PlotVar3 = y;
-    Simulink_PlotVar4 = yd;
+    Simulink_PlotVar1 = x;
+    Simulink_PlotVar2 = xd;
+    Simulink_PlotVar3 = yd;
+    Simulink_PlotVar4 = zd;
 
     theta1motorlast = theta1motor;
     theta2motorlast = theta2motor;
@@ -504,7 +520,7 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
 
 void printing(void){
     if (whattoprint == 0) {
-        serial_printf(&SerialA, "%.2f %.2f,%.2f,%.2f,%.2f,%.2f   \n\r",printtheta1motor,printtheta2motor,printtheta3motor,desmotortheta1,desmotortheta2, desmotortheta3);
+        serial_printf(&SerialA, "%.4f %.4f,%.4f,%.2f,%.2f,%.2f   \n\r",printtheta1motor,printtheta2motor,printtheta3motor,desmotortheta1,desmotortheta2, desmotortheta3);
     } else {
         serial_printf(&SerialA, "Print test   \n\r");
     }
