@@ -232,8 +232,9 @@ float xb = .254;
 float yb = 0;
 float zb = .508;
 float t_start = 0;
-float t_total = 2;
+float t_total = 1;
 
+float waypoint_length = 0;
 
 void mains_code(void);
 
@@ -256,27 +257,43 @@ typedef struct waypoints {
 void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float *tau2,float *tau3, int error) {
     point start = {.254,0,.508};
     point above_sun = {0.05,0.1,0.69};
-    point above_peghole = {0.0314,0.3538,0.3};
-    point in_peghole = {0.0314,0.3538,0.12};
-    point out_peghole = {0.0314,0.3538,0.3};
+    point above_peghole = {0.0314,0.3539,0.3};
+    point above_peghole_lowerz = {0.0314,0.3539,0.19};
+    point in_peghole = {0.0314,0.3539,0.12};
+    point in_peghole2 = {0.0314,0.3539,0.12};
+    point out_peghole = {0.0314,0.3539,0.3};
     point peghole_to_zigzag = {0.28,0.05,0.39};
-    point align_zigzag = {0.4044,0.0854,0.3};
-    point start_zigzag = {0.4044,0.0854,0.1982};
-    point through_zigzag1 = {0.4189,0.0617,0.1982};
-    point through_zigzag2 = {0.42,0.05,0.1982};
-    point through_zigzag3 = {0.4198,0.0493,0.1982};
-    point through_zigzag4 = {0.4061,0.0384,0.1982};
-    point through_zigzag5 = {0.3423,0.0497,0.1982};
-    point through_zigzag6 = {0.3334,0.0446,0.1982};
-    point through_zigzag7 = {0.3281,0.0323,0.1982};
-    point through_zigzag8 = {0.3795,-0.0299,0.1982};
-    point out_zigzag = {0.3795,-0.0299,0.35};
-    point start_egg = {0.41,0.07,0.3};
-    point end_egg = {0,0,0};
-    point final_pos = {0,0,0};
+    point align_zigzag = {0.4021,0.1148,0.3};
+    point align_zigzag_height = {0.3839,0.1067,0.205};
+    point start_zigzag = {0.3839,0.1067,0.204};
+    point through_zigzag1 = {0.4019,0.0858,0.2045};
+    point through_zigzag2 = {0.4200,0.0608,0.2045};
+    point through_zigzag3 = {0.4213,0.0518,0.2045};
+    point through_zigzag4 = {0.4186,0.0466,0.2045};
+    point through_zigzag5 = {0.4047,0.04014,0.2045};
+    point through_zigzag6 = {0.3996,0.0394,0.2045};
+    point through_zigzag7 = {0.3584,0.0490,0.2045};
+    point through_zigzag8 = {0.34,0.0506,0.2045};
+    point through_zigzag9 = {0.333,0.0482,0.2045};
+    point through_zigzag10 = {0.329,0.0363,0.2045};
+    point through_zigzag11 = {0.334,0.0268,0.2045};
+    point through_zigzag12 = {0.384,-0.0309,0.2045};
+    point out_zigzag = {0.3978,-0.0659,0.207};
+    point zigzag_to_egg = {0.2486,0.1875,0.4};
+    point start_egg = {0.2486,0.1875,0.3};
+    point end_egg = {0.2486,0.1875,0.29};
+    point egg_hold1 = {0.2486,0.1875,0.27921};
+    point egg_hold2 = {0.2486,0.1875,0.27921};
+    point egg_hold3 = {0.2486,0.1875,0.27921};
+    point egg_hold4 = {0.2486,0.1875,0.27921};
+    point final_pos = {.254,0,.508};
+    point final_pos2 = {.254,0,.508};
+    point final_pos3 = {.254,0,.508};
+    point final_pos4 = {.254,0,.508};
 
-    point waypoints [] = {start, above_sun, above_peghole, in_peghole, out_peghole, peghole_to_zigzag, align_zigzag, start_zigzag, through_zigzag1,through_zigzag2, through_zigzag3, through_zigzag4, through_zigzag5, through_zigzag6, through_zigzag7, through_zigzag8, out_zigzag, start_egg, end_egg, final_pos};
+    point waypoints [] = {start, above_sun, above_peghole, above_peghole_lowerz, in_peghole, in_peghole2, out_peghole, peghole_to_zigzag, align_zigzag, align_zigzag_height, start_zigzag, through_zigzag1,through_zigzag2, through_zigzag3, through_zigzag4, through_zigzag5, through_zigzag6, through_zigzag7, through_zigzag8, through_zigzag9, through_zigzag10, through_zigzag11, through_zigzag12, out_zigzag, zigzag_to_egg, start_egg, end_egg, egg_hold1, egg_hold2, egg_hold3, egg_hold4, final_pos, final_pos2, final_pos3, final_pos4};
 
+    int waypoints_length = 34;
 
 
     //getting Omega values
@@ -337,7 +354,6 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
     float deltay = yb - ya;
     float deltaz = zb - za;
     float t_percent = (t-t_start)/t_total;
-
     if (t-t_start < t_total) {
         xd = deltax*t_percent+xa;
         yd = deltay*t_percent+ya;
@@ -356,6 +372,11 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
         zb = waypoints[waypoint_count].z;
     }
 
+    if (waypoint_count > waypoints_length - 1) {
+        xb = .254;
+        yb = 0;
+        zb = .508;
+    }
     //Finding x,y,z dot
     xdot = (x - x_old)/0.001;
     xdot = (xdot + xdot_old1 + xdot_old2)/3.0;
