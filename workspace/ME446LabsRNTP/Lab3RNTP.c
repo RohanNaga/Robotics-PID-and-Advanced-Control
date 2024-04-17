@@ -39,6 +39,10 @@ float Simulink_PlotVar1 = 0;
 float Simulink_PlotVar2 = 0;
 float Simulink_PlotVar3 = 0;
 float Simulink_PlotVar4 = 0;
+
+
+//Variables used for forward kinematics
+
 float len = .254;  // length of each of the links
 float x = 0;       // x value of end-effector
 float y = 0;       // y value of end-effector
@@ -54,12 +58,16 @@ float h = 0;            // hypotenuse of the triangle connecting end effector po
 float d1 = .254;        // value for d1 in DH table
 float q2 = 0;
 float q3 = 0;
+
+//Trajectory tracking variables
 float theta1des;
 float theta2des;
 float theta3des;
 float theta1motorlast;
 float theta2motorlast;
 float theta3motorlast;
+
+//Joint Angular Velocities and variables to get filtered omega values
 float Theta1_old = 0;
 float Omega1_old1 = 0;
 float Omega1_old2 = 0;
@@ -72,19 +80,9 @@ float Theta3_old = 0;
 float Omega3_old1 = 0;
 float Omega3_old2 = 0;
 float Omega3 = 0;
-float error1old = 0;
-float error2old = 0;
-float error3old = 0;
-float error1 = 0;
-float error2 = 0;
-float error3 = 0;
-float Integralold1 = 0;
-float Integral1 = 0;
-float Integralold2 = 0;
-float Integral2 = 0;
-float Integralold3 = 0;
-float Integral3 = 0;
 float T = 0;
+
+//Tuned KP and KD values to reduce error between desired path trajectory and actual path trajectory
 float KP1 = 50;
 float KD1 = 2.35;
 float KP2 = 45;
@@ -94,9 +92,6 @@ float KD3 = 1.55;
 float Ki1 = 300;
 float Ki2 = 800;
 float Ki3 = 1400;
-float threshold1 = .02;
-float threshold2 = .015;
-float threshold3 = .015;
 float J1 = 0.0167;
 float J2 = 0.03;
 float J3 = 0.0128;
@@ -107,6 +102,7 @@ float t = 0;
 float radius = 0.05;
 float w = 2;
 
+// Friction control inputs to decide wether friction is viscous or coulombic and at what speed to switch between each type of friction
 float minimum_velocity1 = 0.1;
 float Viscous_positive1 = .185;
 float Coulomb_positive1 = .18;
@@ -128,13 +124,17 @@ float Viscous_negative3 = .28;
 float Coulomb_negative3 = -.5190;
 float slope_between_minimums3 = 5;
 
+// Friction torque variable
 float u_fric1 = 0;
 float u_fric2 = 0;
 float u_fric3 = 0;
 
+// Friction torque coefficients
 float ff1 = .55;
 float ff2 = .75;
 float ff3 = .8;
+
+// Virables and Values in matrices used to calculate the torques at each joint with a weakened rotated axis
 
 float cosq1 = 0;
 float sinq1 = 0;
@@ -183,6 +183,7 @@ float JT_2[3];
 float JT_3[3];
 float KPxyz[3];
 
+// Velocity filter for x, y, z dot values
 float x_old = 0;
 float xdot_old1 = 0;
 float xdot_old2 = 0;
@@ -193,6 +194,7 @@ float z_old = 0;
 float zdot_old1 = 0;
 float zdot_old2 = 0;
 
+// variables for path trajectory, speed and acceleration
 float xd = 0;
 float yd = 0;
 float zd = 0;
@@ -203,6 +205,7 @@ float xdot = 0;
 float ydot = 0;
 float zdot = 0;
 
+// KP and KD gains for state space and Impedence control
 float KPx = 175;
 float KDx = 14;
 float KPy = 170;
@@ -210,27 +213,26 @@ float KDy = 14;
 float KPz = 150;
 float KDz = 11;
 
-float KPxn = 175;
-float KPyn = 170;
-float KPzn = 150;
-float KDxn = 14;
-float KDyn = 14;
-float KDzn = 11;
-
+// Variables to set feedforward force
 float Fzcmd = 0;
 float Kt =  6;
 
+// Variables to caluclate intermediate steps
 float taux = 0;
 float tauy = 0;
 float tauz = 0;
 
+// Straight line point a
 float xa = .25;
 float ya = 0;
-float za = .5;
+float za = .25;
 
+// Straight line point b
 float xb = .45;
 float yb = 0;
 float zb = .5;
+
+// time control for straight line 
 float t_start = 0;
 float t_total = 5;
 
@@ -250,6 +252,10 @@ void main(void)
 // This function is called every 1 ms
 void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float *tau2,float *tau3, int error) {
 
+    /* This section of code is used to get the Omega values for each joint.
+    Because Omega values can fluctuate very quickly and have momentarily large values,
+    we have utilized an FIR filter to average out the last three omega values to get a
+    reasonable estimate for the current actual omega value */
 
     //getting Omega values
         Omega1 = (theta1motor - Theta1_old)/0.001;
@@ -273,6 +279,15 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
         Omega3_old2 = Omega3_old1;
         Omega3_old1 = Omega3;
 
+    /* This code identifies which range of values each joint's angular velocity(omega) is in.
+    This is important as the friction coefficient changes with the joints angular velocity.
+    When the angular velocity of the joint is below or above the minimum velocity, the friction
+    torque is equal to the Viscous coeefficient multiplied by the omega value plus the Coulombic friction offset.
+    When it is below the minimum velocity value, the friction torque is equal to the known slope in this region
+    multiplied by the omega value. It is importnant to use different vairable for the positive and negative sides
+    of the omega values as there are different levels of friction.
+    */
+    
     if (Omega1 > minimum_velocity1) {
         u_fric1 = Viscous_positive1*Omega1 + Coulomb_positive1;
     } else if (Omega1 < -minimum_velocity1) {
@@ -297,12 +312,17 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
         u_fric3 = slope_between_minimums3*Omega3;
     }
 
-
+    /* These are the set of equations which calculate the end effector positon of the robot based on its geometry
+    */
+    
     //Forward Kinematics
     x = .254*cos(theta1motor)*(cos(theta3motor)+sin(theta2motor));
     y = .254*sin(theta1motor)*(cos(theta3motor)+sin(theta2motor));
     z = .254*(1+cos(theta2motor)-sin(theta3motor));
-    /*
+    
+    /* 
+    /* This code is utilized to set the desired trajectory for the robot to swtich 
+    between 2 different points every second */
     if (mycount % 2000 < 1000){
         xd = .2;
         yd = 0;
@@ -313,8 +333,18 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
         zd = .44;
     }
     */
+
+    // This sets the variable t to the time in seconds from the start of the code running.
+    // mycount increments every millisecond so it is the time in milliseconds since the program started running
+        
     t = mycount/1000.0;
 
+    /* This code is used for the straight line path trajectory. We first find the total distance each way by subtracting the two desired points.
+        We then set a variable equal to the percentage of time that has passed out of the total time for 1 straight line pass.
+        Then using an if-else statement, if we are at less than half the total time, the path trajectory is calculated to go from point a to point b.
+        If we are past half the total time, then the trajectory is calculated to go back from point b to point a. If we reach the total time, we set the
+        start tinme equal to the current time to reset the loop.
+    */
     float deltax = xb - xa;
     float deltay = yb - ya;
     float deltaz = zb - za;
@@ -340,6 +370,12 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
         t_start = t;
     }
 
+    /* This code is used to calculate the variables needed to calculate the final torques at each joint.
+    We first calculat the velocities values by using an FIR filter. This FIR filter averages the last three velocity values
+    to get an accurate estimation for the current velocity value. This is done by storing the last two velocity values
+    in global variables.
+    */
+    
     //Finding x,y,z dot
     xdot = (x - x_old)/0.001;
     xdot = (xdot + xdot_old1 + xdot_old2)/3.0;
@@ -362,6 +398,11 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
     zdot_old2 = zdot_old1;
     zdot_old1 = zdot;
 
+
+    /* This code was taken from the lab manual and is used to calculat the rotation and Jacobian matrices
+    based on the thetax, thetay, and thetaz rotation values. */
+
+    
     //Rotation xyz and its Transpose
     cosz = cos(thetaz);
     sinz = sin(thetaz);
@@ -405,23 +446,38 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
     JT_3[1] = JT_32;
     JT_3[2] = JT_33;
 
-
+    
+    /* This code is used to calculate intermediary steps in the torque calculations to make debugging easier by checking intermediary values.
+    In the below section these values will be used in the torque equation to calculate the torque with simple impedance control from the 
+    equation given in the lab manual.
+    */
+    
+    // This is the typical KP and KD control calculation but specified to each axis
     KPxyz[0] = KPx*(xd-x)+KDx*(xd_dot-xdot);
     KPxyz[1] = KPy*(yd-y)+KDy*(yd_dot-ydot);
     KPxyz[2] = KPz*(zd-z)+KDz*(zd_dot-zdot);
 
+    // This is the error in desired x,y,z values and actual values
     float e1 = (xd-x);
     float e2 = (yd-y);
     float e3 = (zd-z);
 
+    // This is the error in desired x,y,z velocities and the actual velocities
     float edot1 = (xd_dot-xdot);
     float edot2 = (yd_dot-ydot);
     float edot3 = (zd_dot-zdot);
 
+    // This is an intermediary step to calculate repeated values in the torque equation with simple impedance control.
     taux = KPx*RT11*e1 + KPx*RT12*e2 + KPx*RT13*e3 + KDx*RT11*edot1 + KDx*RT12*edot2 + KDx*RT13*edot3;
     tauy = KPy*RT21*e1 + KPy*RT22*e2 + KPy*RT23*e3 + KDy*RT21*edot1 + KDy*RT22*edot2 + KDy*RT23*edot3;
     tauz = KPz*RT31*e1 + KPz*RT32*e2 + KPz*RT33*e3 + KDz*RT31*edot1 + KDz*RT32*edot2 + KDz*RT33*edot3;
 
+    /* Below are the set of equations utilized to calcualte the torques for each joint of the robot. We have created torque equations to control
+    the robot utilizing simple impedance control which can weaken the robots control in an axis direction. We have coded Task space PD control 
+    that accounts for the torque needed to overcome friction which is important to tune KP and KD values to each of the x, y and z axes.
+    We have created a control law for just friction control. We also still have PID and Feedforward control laws below from previous labs.
+    */
+    // This is the set of equations given in the lab manual utilized to calculate the torques with simple impedance cotrol
     // Simple Impedence Control
     *tau1 = ((JT_11*R11+JT_12*R21+JT_13*R31)*taux+(JT_11*R12+JT_12*R22+JT_13*R32)*tauy+(JT_11*R13+JT_12*R23+JT_13*R33)*tauz)+ff1*u_fric1;
     *tau2 = ((JT_21*R11+JT_22*R21+JT_23*R31)*taux+(JT_21*R12+JT_22*R22+JT_23*R32)*tauy+(JT_21*R13+JT_22*R23+JT_23*R33)*tauz)+ff2*u_fric2;;
