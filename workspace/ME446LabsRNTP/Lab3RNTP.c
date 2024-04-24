@@ -320,9 +320,10 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
     y = .254*sin(theta1motor)*(cos(theta3motor)+sin(theta2motor));
     z = .254*(1+cos(theta2motor)-sin(theta3motor));
     
-    /* 
+
     /* This code is utilized to set the desired trajectory for the robot to swtich 
     between 2 different points every second */
+    /*
     if (mycount % 2000 < 1000){
         xd = .2;
         yd = 0;
@@ -399,7 +400,7 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
     zdot_old1 = zdot;
 
 
-    /* This code was taken from the lab manual and is used to calculat the rotation and Jacobian matrices
+    /* This code was taken from the lab manual and is used to calculate the rotation and Jacobian matrices
     based on the thetax, thetay, and thetaz rotation values. */
 
     
