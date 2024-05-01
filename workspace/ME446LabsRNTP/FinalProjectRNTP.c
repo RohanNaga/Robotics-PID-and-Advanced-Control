@@ -39,6 +39,8 @@ float Simulink_PlotVar1 = 0;
 float Simulink_PlotVar2 = 0;
 float Simulink_PlotVar3 = 0;
 float Simulink_PlotVar4 = 0;
+float Simulink_PlotVar5 = 0;
+float Simulink_PlotVar6 = 0;
 float len = .254;  // length of each of the links
 float x = 0;       // x value of end-effector
 float y = 0;       // y value of end-effector
@@ -247,12 +249,18 @@ void main(void)
     mains_code();
 }
 
-typedef struct waypoints {
+typedef struct point {
     float x;
     float y;
     float z;
+
+
 }point;
 
+point add(point a, int x, int y, int z) {
+   point c = {a.x + x, a.y + y, a.z + z};
+   return c;
+}
 
 // This function is called every 1 ms
 void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float *tau2,float *tau3, int error) {
@@ -264,9 +272,10 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
     point in_peghole2 = {0.0314,0.3539,0.12};
     point out_peghole = {0.0314,0.3539,0.3};
     point peghole_to_zigzag = {0.28,0.05,0.39};
-    point align_zigzag = {0.4021,0.1148,0.3};
-    point align_zigzag_height = {0.3839,0.1067,0.205};
-    point start_zigzag = {0.4019,0.0963,0.2047};
+    point align_zigzag = {0.3981,0.0935,0.3};
+    point align_zigzag_height = {0.3981,0.0935,0.2047}; //add(align_zigzag,0,0,-.9953);
+
+    point start_zigzag = add(align_zigzag_height,0,0,0);
     point through_zigzag1 = {0.417,0.0585,0.2047};
 
     point through_zigzag2 = {0.4185,0.0493,0.2047};
@@ -308,7 +317,7 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
 
     point waypoints [] = {start, above_sun, above_peghole, above_peghole_lowerz, in_peghole, in_peghole2, out_peghole, peghole_to_zigzag, align_zigzag, align_zigzag_height, start_zigzag, through_zigzag1,through_zigzag2, through_zigzag3, through_zigzag4, through_zigzag5, through_zigzag6, through_zigzag7, through_zigzag8, out_zigzag, zigzag_to_egg, start_egg, end_egg, egg_hold1, egg_hold2, egg_hold3, egg_hold4, final_pos, final_pos2, final_pos3, final_pos4};
     int waypoints_length = 29;
-    int variable_time [] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 , 1, .75, .75, .75 , .75, .75 , .75, .75, 1, 1, 1 , 1 , 1 , 1};
+    //int variable_time [] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 , 1, .75, .75, .75 , .75, .75 , .75, .75, 1, 1, 1 , 1 , 1 , 1};
 
     //getting Omega values
         Omega1 = (theta1motor - Theta1_old)/0.001;
@@ -369,7 +378,7 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
     if (waypoint_count >= waypoints_length) {
         waypoint_count = waypoints_length  - 1 ;
     }
-    t_total = variable_time[waypoint_count];
+    //t_total = 1;//variable_time[waypoint_count];
     float t_percent = (t-t_start)/t_total;
 
     if (t-t_start < t_total) {
@@ -397,11 +406,43 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
         zb = .508;
     }
 
-    if (waypoint_count > 9 && waypoint_count <= 12) {
+    if (waypoint_count == 2 ) {
+        thetaz = 0;
+        KPx = 200;
+        KDx = 8;
+        KPy = 150;
+        KDy = 6;
+        KPz = 300;
+        KDz = 5;
+    } else if (waypoint_count > 2 && waypoint_count < 7 ) {
+        thetaz = 0;
+        KPx = 25;
+        KDx = 2;
+        KPy = 20;
+        KDy = 2;
+        KPz = 600;
+        KDz = 7;
+    } else if (waypoint_count > 6 && waypoint_count <9 ) {
+        thetaz = 0;
+        KPx = 200;
+        KDx = 8;
+        KPy = 150;
+        KDy = 6;
+        KPz = 300;
+        KDz = 5;
+    } else if (waypoint_count == 9 ) {
+        thetaz = 0;
+        KPx = 25;
+        KDx = 2;
+        KPy = 20;
+        KDy = 2;
+        KPz = 600;
+        KDz = 7;
+    } else if (waypoint_count > 9 && waypoint_count <= 12) {
         thetaz = .6435;
         KPx = 25;
-        KDx = 5;
-        KPy = 700;
+        KDx = 1;
+        KPy = 800;
         KDy = 8;
         KPz = 400;
         KDz = 7;
@@ -603,8 +644,10 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
 
     Simulink_PlotVar1 = x;
     Simulink_PlotVar2 = xd;
-    Simulink_PlotVar3 = yd;
-    Simulink_PlotVar4 = zd;
+    Simulink_PlotVar3 = y;
+    Simulink_PlotVar4 = yd;
+    Simulink_PlotVar5 = z;
+    Simulink_PlotVar6 = zd;
 
     theta1motorlast = theta1motor;
     theta2motorlast = theta2motor;
