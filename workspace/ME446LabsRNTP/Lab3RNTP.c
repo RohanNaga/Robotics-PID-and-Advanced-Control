@@ -206,12 +206,12 @@ float ydot = 0;
 float zdot = 0;
 
 // KP and KD gains for state space and Impedence control
-float KPx = 175;
-float KDx = 14;
-float KPy = 170;
-float KDy = 14;
-float KPz = 150;
-float KDz = 11;
+float KPx = 2800;
+float KDx = 65;
+float KPy = 1450;
+float KDy = 40;
+float KPz = 850;
+float KDz = 20;
 
 // Variables to set feedforward force
 float Fzcmd = 0;
@@ -223,18 +223,18 @@ float tauy = 0;
 float tauz = 0;
 
 // Straight line point a
-float xa = .25;
+float xa = .45;
 float ya = 0;
 float za = .25;
 
 // Straight line point b
-float xb = .45;
-float yb = 0;
-float zb = .5;
+float xb = .15;
+float yb = -.25;
+float zb = .25;
 
 // time control for straight line 
 float t_start = 0;
-float t_total = 5;
+float t_total = 2;
 
 void mains_code(void);
 
@@ -546,8 +546,8 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
     printtheta2motor = y;		// utilized to print theta 2 value
     printtheta3motor = z;		// utilized to print theta 3 value
 
-    Simulink_PlotVar1 = z;
-    Simulink_PlotVar2 = zd;
+    Simulink_PlotVar1 = x;
+    Simulink_PlotVar2 = xd;
     Simulink_PlotVar3 = y;
     Simulink_PlotVar4 = yd;
 

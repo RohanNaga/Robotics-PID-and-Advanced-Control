@@ -205,12 +205,12 @@ float xdot = 0;
 float ydot = 0;
 float zdot = 0;
 
-float KPx = 200;
-float KDx = 8;
-float KPy = 150;
-float KDy = 6;
-float KPz = 300;
-float KDz = 5;
+float KPx = 2800;
+float KDx = 65;
+float KPy = 1450;
+float KDy = 40;
+float KPz = 850;
+float KDz = 20;
 
 float KPxn = 175;
 float KPyn = 170;
@@ -234,10 +234,11 @@ float xb = .254;
 float yb = 0;
 float zb = .508;
 float t_start = 0;
-float t_total = 1;
+float t_total = .8;
 
 float waypoint_length = 0;
 int waypoint_count = 0;
+float threshhold = .02;
 
 void mains_code(void);
 
@@ -257,67 +258,50 @@ typedef struct point {
 
 }point;
 
-point add(point a, int x, int y, int z) {
+point add(point a, float x, float y, float z) {
    point c = {a.x + x, a.y + y, a.z + z};
    return c;
 }
 
 // This function is called every 1 ms
 void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float *tau2,float *tau3, int error) {
-    point start = {.254,0,.508};
-    point above_sun = {0.05,0.1,0.5};
-    point above_peghole = {0.0314,0.3539,0.3};
-    point above_peghole_lowerz = {0.0314,0.3539,0.19};
-    point in_peghole = {0.0314,0.3539,0.12};
-    point in_peghole2 = {0.0314,0.3539,0.12};
-    point out_peghole = {0.0314,0.3539,0.3};
-    point peghole_to_zigzag = {0.28,0.05,0.39};
-    point align_zigzag = {0.3981,0.0935,0.3};
-    point align_zigzag_height = {0.3981,0.0935,0.2047}; //add(align_zigzag,0,0,-.9953);
+    point start = {.254,0,.508}; //1
+    point above_sun = {0.05,0.1,0.5}; //2
+    point above_peghole = {0.0326,0.353,0.3}; //3
+    point above_peghole_lowerz = {0.0326,0.353,0.19}; //4
+    point in_peghole = {0.0326,0.353,0.1235}; //5
+    point in_peghole2 = {0.0326,0.353,0.1235}; //6
+    point out_peghole = {0.0326,0.353,0.2044}; //7
+    point peghole_to_zigzag = {0.2025,0.1299,0.2044}; //8
+    point align_zigzag = {0.3981,0.1082,0.2044}; //9
+    point align_zigzag_height = {0.4014,0.0963,0.2044}; //10
 
-    point start_zigzag = add(align_zigzag_height,0,0,0);
-    point through_zigzag1 = {0.417,0.0585,0.2047};
+    point through_zigzag1 = {0.4243,0.05,0.2044}; //11
 
-    point through_zigzag2 = {0.4185,0.0493,0.2047};
+    point through_zigzag2 = {0.4143,0.0411,0.2044}; // 12
 
-    point through_zigzag3 = {0.4107,0.0422,0.2047};
-    point through_zigzag4 = {0.3484,0.0555,0.2047};
+    point through_zigzag3 = {0.3374,0.0463,0.2044}; //13
 
-    point through_zigzag5 = {0.3461,0.0518,0.2047};
-    point through_zigzag6 = {0.3325,0.0406,0.2047};
+    point through_zigzag5 = {0.331,0.0365,0.2044}; //14
 
-    point through_zigzag7 = {0.3334,0.0331,0.2047};
-    point through_zigzag8 = {0.3856,-0.0308,0.2047};
-    /*
-    point through_zigzag1 = {0.4019,0.0858,0.2047};
-    point through_zigzag2 = {0.4200,0.0608,0.2047};
-    point through_zigzag3 = {0.4213,0.0518,0.2047};
-    point through_zigzag4 = {0.4186,0.0466,0.2047};
-    point through_zigzag5 = {0.4047,0.04014,0.2047};
-    point through_zigzag6 = {0.3996,0.0394,0.2047};
-    point through_zigzag7 = {0.3584,0.0490,0.2047};
-    point through_zigzag8 = {0.34,0.0506,0.2047};
-    point through_zigzag9 = {0.333,0.0482,0.2047};
-    point through_zigzag10 = {0.329,0.0363,0.2047};
-    point through_zigzag11 = {0.334,0.0268,0.2047};
-    point through_zigzag12 = {0.384,-0.0309,0.2047};
-    */
-    point out_zigzag = {0.3978,-0.0659,0.3};
-    point zigzag_to_egg = {0.2486,0.1875,0.4};
-    point start_egg = {0.2486,0.1875,0.3};
-    point end_egg = {0.2486,0.1875,0.29};
-    point egg_hold1 = {0.2486,0.1875,0.279233};
-    point egg_hold2 = {0.2486,0.1875,0.279233};
-    point egg_hold3 = {0.2486,0.1875,0.279233};
-    point egg_hold4 = {0.2486,0.1875,0.279233};
-    point final_pos = {.254,0,.508};
-    point final_pos2 = {.254,0,.508};
+    point through_zigzag6 = {0.3872,-.03,0.2044}; //15
+
+    point out_zigzag = {0.3978,-0.0659,0.2044};// 16
+    point zigzag_to_egg = {0.2486,0.1875,0.4}; // 19
+    point start_egg = {0.2486,0.1875,0.3}; //20
+    point end_egg = {0.2486,0.1875,0.285}; //21
+    point egg_hold1 = {0.2486,0.1875,0.277}; //22
+    point egg_hold2 = {0.2486,0.1875,0.277}; //23
+    point egg_hold3 = {0.2486,0.1875,0.277}; //24
+    point egg_hold4 = {0.2486,0.1875,0.277}; //25
+    point egg_hold5 = {0.2486,0.1875,0.277}; //26
+    point final_pos = {.254,0,.508}; //27
+    point final_pos2 = {.254,0,.508}; // 28
     point final_pos3 = {.254,0,.508};
     point final_pos4 = {.254,0,.508};
 
-    point waypoints [] = {start, above_sun, above_peghole, above_peghole_lowerz, in_peghole, in_peghole2, out_peghole, peghole_to_zigzag, align_zigzag, align_zigzag_height, start_zigzag, through_zigzag1,through_zigzag2, through_zigzag3, through_zigzag4, through_zigzag5, through_zigzag6, through_zigzag7, through_zigzag8, out_zigzag, zigzag_to_egg, start_egg, end_egg, egg_hold1, egg_hold2, egg_hold3, egg_hold4, final_pos, final_pos2, final_pos3, final_pos4};
-    int waypoints_length = 29;
-    //int variable_time [] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 , 1, .75, .75, .75 , .75, .75 , .75, .75, 1, 1, 1 , 1 , 1 , 1};
+    point waypoints [] = {start, above_sun, above_peghole, above_peghole_lowerz, in_peghole, in_peghole2, out_peghole, peghole_to_zigzag, align_zigzag, align_zigzag_height, through_zigzag1,through_zigzag2, through_zigzag3, through_zigzag5, through_zigzag6, out_zigzag, zigzag_to_egg, start_egg, end_egg, egg_hold1, egg_hold2, egg_hold3, egg_hold4, egg_hold5, final_pos, final_pos2, final_pos3, final_pos4};
+    int waypoints_length = 27;
 
     //getting Omega values
         Omega1 = (theta1motor - Theta1_old)/0.001;
@@ -375,10 +359,10 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
     float deltax = xb - xa;
     float deltay = yb - ya;
     float deltaz = zb - za;
-    if (waypoint_count >= waypoints_length) {
-        waypoint_count = waypoints_length  - 1 ;
+    if (waypoint_count >= waypoints_length-1) {
+        waypoint_count = waypoints_length  - 2 ;
     }
-    //t_total = 1;//variable_time[waypoint_count];
+
     float t_percent = (t-t_start)/t_total;
 
     if (t-t_start < t_total) {
@@ -399,94 +383,102 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
         yb = waypoints[waypoint_count].y;
         zb = waypoints[waypoint_count].z;
     }
-
+    /*
     if (waypoint_count > waypoints_length - 1) {
         xb = .254;
         yb = 0;
         zb = .508;
+        KPx = 150;
+        KDx = 8;
+        KPy = 100;
+        KDy = 7;
+        KPz = 75;
+        KDz = 5;
     }
-
+    */
     if (waypoint_count == 2 ) {
         thetaz = 0;
-        KPx = 200;
-        KDx = 8;
-        KPy = 150;
-        KDy = 6;
-        KPz = 300;
-        KDz = 5;
+        KPx = 2800;
+        KDx = 65;
+        KPy = 1450;
+        KDy = 40;
+        KPz = 850;
+        KDz = 20;
     } else if (waypoint_count > 2 && waypoint_count < 7 ) {
         thetaz = 0;
-        KPx = 25;
-        KDx = 2;
-        KPy = 20;
-        KDy = 2;
-        KPz = 600;
-        KDz = 7;
+        KPx = 2800;
+        KDx = 65;
+        KPy = 1450;
+        KDy = 40;
+        KPz = 850;
+        KDz = 20;
     } else if (waypoint_count > 6 && waypoint_count <9 ) {
         thetaz = 0;
-        KPx = 200;
-        KDx = 8;
-        KPy = 150;
-        KDy = 6;
-        KPz = 300;
-        KDz = 5;
+        KPx = 1200;
+        KDx = 20;
+        KPy = 1000;
+        KDy = 15;
+        KPz = 850;
+        KDz = 20;
     } else if (waypoint_count == 9 ) {
         thetaz = 0;
-        KPx = 25;
-        KDx = 2;
-        KPy = 20;
-        KDy = 2;
-        KPz = 600;
-        KDz = 7;
-    } else if (waypoint_count > 9 && waypoint_count <= 12) {
+        KPx = 2800;
+        KDx = 65;
+        KPy = 1450;
+        KDy = 40;
+        KPz = 850;
+        KDz = 20;
+    } else if (waypoint_count == 10) {
         thetaz = .6435;
-        KPx = 25;
-        KDx = 1;
-        KPy = 800;
-        KDy = 8;
-        KPz = 400;
-        KDz = 7;
+        KPx = 100;
+        KDx = 20;
+        KPy = 1450;
+        KDy = 40;
+        KPz = 850;
+        KDz = 20;
+
+    } else if (waypoint_count == 11 ) {
+        thetaz = -.2618;
+        KPx = 500;
+        KDx = 20;
+        KPy = 1450;
+        KDy = 40;
+        KPz = 850;
+        KDz = 20;
+    } else if (waypoint_count == 12) {
+        thetaz = -.2618;
+        KPx = 2800;
+        KDx = 65;
+        KPy = 500;
+        KDy = 5;
+        KPz = 850;
+        KDz = 20;
     } else if (waypoint_count == 13) {
-        thetaz = 0;
-        KPx = 800;
-        KDx = 8;
-        KPy = 500;
-        KDy = 6;
-        KPz = 400;
-        KDz = 8;
+        thetaz = -0.2618;
+        KPx = 500;
+        KDx = 20;
+        KPy = 1450;
+        KDy = 40;
+        KPz = 850;
+        KDz = 20;
     } else if (waypoint_count > 13 && waypoint_count <= 15) {
-        thetaz = -.2618;
-        KPy = 10;
-        KDy = 5;
-        KPx = 900;
-        KDx = 11;
-        KPz = 400;
-        KDz = 9;
-    } else if (waypoint_count == 16 || waypoint_count == 17) {
-        thetaz = -.2618;
-        KPy = 600;
-        KDy = 5;
-        KPx = 1000;
-        KDx = 4;
-        KPz = 400;
-        KDz = 8;
-    } else if (waypoint_count > 17 && waypoint_count < 18) {
-        thetaz = .6435;
-        KPx = 50;
-        KDx = 5;
-        KPy = 500;
-        KDy = 10;
-        KPz = 400;
-        KDz = 11;
-    } else if (waypoint_count >= 18) {
         thetaz = 0;
-        KPx = 800;
-        KDx = 11;
-        KPy = 500;
-        KDy = 10;
-        KPz = 400;
-        KDz = 9;
+        KPx = 2800;
+        KDx = 65;
+        KPy = 1450;
+        KDy = 40;
+        KPz = 850;
+        KDz = 20;
+    } else if (waypoint_count >= 16) {
+        thetaz = 0;
+        KPx = 2800;
+        KDx = 65;
+        KPy = 1450;
+        KDy = 40;
+        KPz = 850;
+        KDz = 20;
     }
+
 
     //Finding x,y,z dot
     xdot = (x - x_old)/0.001;
@@ -575,31 +567,12 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
     *tau2 = ((JT_21*R11+JT_22*R21+JT_23*R31)*taux+(JT_21*R12+JT_22*R22+JT_23*R32)*tauy+(JT_21*R13+JT_22*R23+JT_23*R33)*tauz)+ff2*u_fric2;;
     *tau3 = ((JT_31*R11+JT_32*R21+JT_33*R31)*taux+(JT_31*R12+JT_32*R22+JT_33*R32)*tauy+(JT_31*R13+JT_32*R23+JT_33*R33)*tauz)+ff3*u_fric3;;
 
-    if (mycount < 10 ) {
+    if (mycount < 16 ) {
         *tau1 = 0;
         *tau2 = 0;
         *tau3 = 0;
     }
 
-    // Task Space PD Control with friction accounted for with feed forward control
-    //*tau1 = JT_1[0]*KPxyz[0]+JT_1[1]*KPxyz[1]+JT_1[2]*KPxyz[2]+ff1*u_fric1+JT_1[2]*Fzcmd/Kt;
-    //*tau2 = JT_2[0]*KPxyz[0]+JT_2[1]*KPxyz[1]+JT_2[2]*KPxyz[2]+ff2*u_fric2+JT_2[2]*Fzcmd/Kt;
-    //*tau3 = JT_3[0]*KPxyz[0]+JT_3[1]*KPxyz[1]+JT_3[2]*KPxyz[2]+ff3*u_fric3+JT_3[2]*Fzcmd/Kt;
-
-    //Friction Control
-    //*tau1 = ff1*u_fric1;
-    //*tau2 = ff2*u_fric2;
-    //*tau3 = ff3*u_fric3;
-
-    // PID Control
-    //*tau1 = KP1*(theta1des-theta1motor)-KD1*Omega1 + Ki1 * Integral1;
-    //*tau2 = KP2*(theta2des-theta2motor)-KD2*Omega2 + Ki2 * Integral2;
-    //*tau3 = KP3*(theta3des-theta3motor)-KD3*Omega3 + Ki3 * Integral3;
-
-    //Forward Feed control
-    //*tau1 = J1*a + KP1*(q-theta1motor)+KD1*(v-Omega1) + Ki1 * Integral1;
-    //*tau2 = J2*a + KP2*(q-theta2motor)+KD2*(v-Omega2) + Ki2 * Integral2;
-    //*tau3 = J3*a + KP3*(q-theta3motor)+KD3*(v-Omega3) + Ki3 * Integral3;
 
     //Motor torque limitation(Max: 5 Min: -5)
     if (*tau1 > 5) {
