@@ -41,6 +41,9 @@ float Simulink_PlotVar3 = 0;
 float Simulink_PlotVar4 = 0;
 float Simulink_PlotVar5 = 0;
 float Simulink_PlotVar6 = 0;
+
+// Variables used for forward kinematics
+
 float len = .254;  // length of each of the links
 float x = 0;       // x value of end-effector
 float y = 0;       // y value of end-effector
@@ -54,14 +57,18 @@ float desmotortheta3 = 0;   // calculated motor theta 3 from inverse kinematics
 float thetag = 0;       // intermediate theta calculation to calculate theta 3
 float h = 0;            // hypotenuse of the triangle connecting end effector position, origin, and r value. Used to calculate theta1 and theta2
 float d1 = .254;        // value for d1 in DH table
-float q2 = 0;
-float q3 = 0;
+float q2 = 0;           // Used for intermidiate calculation of motor theta 2 and 3
+float q3 = 0;           // Used for intermidiate calculation of motor theta 2 and 3
+
+//Trajectory tracking variables
 float theta1des;
 float theta2des;
 float theta3des;
 float theta1motorlast;
 float theta2motorlast;
 float theta3motorlast;
+
+//Joint Angular Velocities and variables to get filtered omega values
 float Theta1_old = 0;
 float Omega1_old1 = 0;
 float Omega1_old2 = 0;
@@ -74,41 +81,9 @@ float Theta3_old = 0;
 float Omega3_old1 = 0;
 float Omega3_old2 = 0;
 float Omega3 = 0;
-float error1old = 0;
-float error2old = 0;
-float error3old = 0;
-float error1 = 0;
-float error2 = 0;
-float error3 = 0;
-float Integralold1 = 0;
-float Integral1 = 0;
-float Integralold2 = 0;
-float Integral2 = 0;
-float Integralold3 = 0;
-float Integral3 = 0;
 float T = 0;
-float KP1 = 50;
-float KD1 = 2.35;
-float KP2 = 45;
-float KD2 = 2.1;
-float KP3 = 60;
-float KD3 = 1.55;
-float Ki1 = 300;
-float Ki2 = 800;
-float Ki3 = 1400;
-float threshold1 = .02;
-float threshold2 = .015;
-float threshold3 = .015;
-float J1 = 0.0167;
-float J2 = 0.03;
-float J3 = 0.0128;
-float q = 0;
-float v = 0;
-float a = 0;
-float t = 0;
-float radius = 0.05;
-float w = 2;
 
+// Friction control inputs to decide wether friction is viscous or coulombic and at what speed to switch between each type of friction
 float minimum_velocity1 = 0.1;
 float Viscous_positive1 = .185;
 float Coulomb_positive1 = .18;
@@ -130,14 +105,17 @@ float Viscous_negative3 = .28;
 float Coulomb_negative3 = -.5190;
 float slope_between_minimums3 = 5;
 
+// Friction torque variable
 float u_fric1 = 0;
 float u_fric2 = 0;
 float u_fric3 = 0;
 
+// Friction torque coefficients
 float ff1 = .55;
 float ff2 = .75;
 float ff3 = .8;
 
+// Virables and Values in matrices used to calculate the torques at each joint with a weakened rotated axis
 float cosq1 = 0;
 float sinq1 = 0;
 float cosq2 = 0;
@@ -185,6 +163,7 @@ float JT_2[3];
 float JT_3[3];
 float KPxyz[3];
 
+// Velocity filter for x, y, z dot values
 float x_old = 0;
 float xdot_old1 = 0;
 float xdot_old2 = 0;
@@ -195,6 +174,7 @@ float z_old = 0;
 float zdot_old1 = 0;
 float zdot_old2 = 0;
 
+// variables for path trajectory, speed and acceleration
 float xd = 0;
 float yd = 0;
 float zd = 0;
@@ -205,6 +185,7 @@ float xdot = 0;
 float ydot = 0;
 float zdot = 0;
 
+// KP and KD gains for state space and Impedence control
 float KPx = 2800;
 float KDx = 65;
 float KPy = 1450;
@@ -212,16 +193,7 @@ float KDy = 40;
 float KPz = 850;
 float KDz = 20;
 
-float KPxn = 175;
-float KPyn = 170;
-float KPzn = 150;
-float KDxn = 14;
-float KDyn = 14;
-float KDzn = 11;
-
-float Fzcmd = 0;
-float Kt =  6;
-
+// Variables to caluclate intermediate steps
 float taux = 0;
 float tauy = 0;
 float tauz = 0;
@@ -250,7 +222,9 @@ void main(void)
     mains_code();
 }
 
+// Struct defined to create a simple and easy way to store the x, y and z position of each waypoint
 typedef struct point {
+    // Variables contained by each instance of the struct
     float x;
     float y;
     float z;
@@ -258,15 +232,12 @@ typedef struct point {
 
 }point;
 
-point add(point a, float x, float y, float z) {
-   point c = {a.x + x, a.y + y, a.z + z};
-   return c;
-}
-
 // This function is called every 1 ms
 void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float *tau2,float *tau3, int error) {
+    // List of waypoints named by relative position and commented by the waypoint number
+    // The array to the right of each point declaration sets the x, y, and z values for that waypoint in that resepctive order
     point start = {.254,0,.508}; //1
-    point above_sun = {0.05,0.1,0.5}; //2
+    point start_to_peg = {0.05,0.1,0.5}; //2
     point above_peghole = {0.0326,0.353,0.3}; //3
     point above_peghole_lowerz = {0.0326,0.353,0.19}; //4
     point in_peghole = {0.0326,0.353,0.1235}; //5
@@ -275,17 +246,11 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
     point peghole_to_zigzag = {0.2025,0.1299,0.2044}; //8
     point align_zigzag = {0.3981,0.1082,0.2044}; //9
     point align_zigzag_height = {0.4014,0.0963,0.2044}; //10
-
     point through_zigzag1 = {0.4243,0.05,0.2044}; //11
-
     point through_zigzag2 = {0.4143,0.0411,0.2044}; // 12
-
     point through_zigzag3 = {0.3374,0.0463,0.2044}; //13
-
     point through_zigzag5 = {0.331,0.0365,0.2044}; //14
-
     point through_zigzag6 = {0.3872,-.03,0.2044}; //15
-
     point out_zigzag = {0.3978,-0.0659,0.2044};// 16
     point zigzag_to_egg = {0.2486,0.1875,0.4}; // 19
     point start_egg = {0.2486,0.1875,0.3}; //20
@@ -296,13 +261,19 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
     point egg_hold4 = {0.2486,0.1875,0.277}; //25
     point egg_hold5 = {0.2486,0.1875,0.277}; //26
     point final_pos = {.254,0,.508}; //27
-    point final_pos2 = {.254,0,.508}; // 28
-    point final_pos3 = {.254,0,.508};
-    point final_pos4 = {.254,0,.508};
+    point final_pos2 = {.254,0,.508}; //28
+    point final_pos3 = {.254,0,.508}; //29
+    point final_pos4 = {.254,0,.508}; //30
 
-    point waypoints [] = {start, above_sun, above_peghole, above_peghole_lowerz, in_peghole, in_peghole2, out_peghole, peghole_to_zigzag, align_zigzag, align_zigzag_height, through_zigzag1,through_zigzag2, through_zigzag3, through_zigzag5, through_zigzag6, out_zigzag, zigzag_to_egg, start_egg, end_egg, egg_hold1, egg_hold2, egg_hold3, egg_hold4, egg_hold5, final_pos, final_pos2, final_pos3, final_pos4};
-    int waypoints_length = 27;
+    // array created to store all waypoints within the trajectory to easily check the current point and the point to go to next
+    point waypoints [] = {start, start_to_peg, above_peghole, above_peghole_lowerz, in_peghole, in_peghole2, out_peghole, peghole_to_zigzag, align_zigzag, align_zigzag_height, through_zigzag1,through_zigzag2, through_zigzag3, through_zigzag5, through_zigzag6, out_zigzag, zigzag_to_egg, start_egg, end_egg, egg_hold1, egg_hold2, egg_hold3, egg_hold4, egg_hold5, final_pos, final_pos2, final_pos3, final_pos4};
+    int waypoints_length = 29; // Length of waypoints array
 
+    /* This section of code is used to get the Omega values for each joint.
+    Because Omega values can fluctuate very quickly and have momentarily large values,
+    we have utilized an FIR filter to average out the last three omega values to get a
+    reasonable estimate for the current actual omega value */
+    
     //getting Omega values
         Omega1 = (theta1motor - Theta1_old)/0.001;
         Omega1 = (Omega1 + Omega1_old1 + Omega1_old2)/3.0;
@@ -325,6 +296,15 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
         Omega3_old2 = Omega3_old1;
         Omega3_old1 = Omega3;
 
+    /* This code identifies which range of values each joint's angular velocity(omega) is in.
+    This is important as the friction coefficient changes with the joints angular velocity.
+    When the angular velocity of the joint is below or above the minimum velocity, the friction
+    torque is equal to the Viscous coeefficient multiplied by the omega value plus the Coulombic friction offset.
+    When it is below the minimum velocity value, the friction torque is equal to the known slope in this region
+    multiplied by the omega value. It is importnant to use different vairable for the positive and negative sides
+    of the omega values as there are different levels of friction.
+    */
+    
     if (Omega1 > minimum_velocity1) {
         u_fric1 = Viscous_positive1*Omega1 + Coulomb_positive1;
     } else if (Omega1 < -minimum_velocity1) {
@@ -349,20 +329,37 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
         u_fric3 = slope_between_minimums3*Omega3;
     }
 
-
+    /* These are the set of equations which calculate the end effector positon of the robot based on its geometry
+    */
+    
     //Forward Kinematics
     x = .254*cos(theta1motor)*(cos(theta3motor)+sin(theta2motor));
     y = .254*sin(theta1motor)*(cos(theta3motor)+sin(theta2motor));
     z = .254*(1+cos(theta2motor)-sin(theta3motor));
 
-    t = mycount/1000.0;
-    float deltax = xb - xa;
-    float deltay = yb - ya;
-    float deltaz = zb - za;
+    /* This code is utilized to set the desired trajectory for the robot to swtich 
+    between the previous waypoint to the next waypoint.
+    A counter variable waypoint_count is incremented every time a trajectory between two waypoints
+    is completed to keep track of which waypoint is next. */
+    
+    t = mycount/1000.0;       // This sets the variable t to the time in seconds from the start of the code running.
+
+    // This code is utilized to hold the robot at the end position we desire and not trying to access waypoints outside of our array length.
     if (waypoint_count >= waypoints_length-1) {
         waypoint_count = waypoints_length  - 2 ;
     }
 
+    
+    /* This code is used for the straight line path trajectory. We first find the total distance each way by subtracting the two desired points.
+        We then set a variable equal to the percentage of time that has passed out of the total time for 1 straight line pass.
+        Then using an if-else statement, if we are at less than the total time, the path trajectory is calculated to go from point a to point b.
+        If we are past the total time, then the varaible t_start is set to the current time and the current waypoint and next waypoint are updated by
+        incremeting waypoint_count.
+    */
+    
+    float deltax = xb - xa;
+    float deltay = yb - ya;
+    float deltaz = zb - za;
     float t_percent = (t-t_start)/t_total;
 
     if (t-t_start < t_total) {
@@ -383,19 +380,12 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
         yb = waypoints[waypoint_count].y;
         zb = waypoints[waypoint_count].z;
     }
-    /*
-    if (waypoint_count > waypoints_length - 1) {
-        xb = .254;
-        yb = 0;
-        zb = .508;
-        KPx = 150;
-        KDx = 8;
-        KPy = 100;
-        KDy = 7;
-        KPz = 75;
-        KDz = 5;
-    }
+
+    /* The below code is utilized to specify KP and KD values in each axis for each path trajectory.
+        Certain path trajectories become more accurate with specific KP and KD values for each axis.
+        This code utilizes the waypoint count to specificy the correct KP and KD values for each step.
     */
+    
     if (waypoint_count == 2 ) {
         thetaz = 0;
         KPx = 2800;
@@ -479,7 +469,12 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
         KDz = 20;
     }
 
-
+    /* This code is used to calculate the variables needed to calculate the final torques at each joint.
+    We first calculat the velocities values by using an FIR filter. This FIR filter averages the last three velocity values
+    to get an accurate estimation for the current velocity value. This is done by storing the last two velocity values
+    in global variables.
+    */
+    
     //Finding x,y,z dot
     xdot = (x - x_old)/0.001;
     xdot = (xdot + xdot_old1 + xdot_old2)/3.0;
@@ -502,6 +497,9 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
     zdot_old2 = zdot_old1;
     zdot_old1 = zdot;
 
+    /* This code was taken from the lab manual and is used to calculate the rotation and Jacobian matrices
+    based on the thetax, thetay, and thetaz rotation values. */
+    
     //Rotation xyz and its Transpose
     cosz = cos(thetaz);
     sinz = sin(thetaz);
@@ -545,28 +543,43 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
     JT_3[1] = JT_32;
     JT_3[2] = JT_33;
 
-
+    /* This code is used to calculate intermediary steps in the torque calculations to make debugging easier by checking intermediary values.
+    In the below section these values will be used in the torque equation to calculate the torque with simple impedance control from the 
+    equation given in the lab manual.
+    */
+    
+    // This is the typical KP and KD control calculation but specified to each axis
     KPxyz[0] = KPx*(xd-x)+KDx*(xd_dot-xdot);
     KPxyz[1] = KPy*(yd-y)+KDy*(yd_dot-ydot);
     KPxyz[2] = KPz*(zd-z)+KDz*(zd_dot-zdot);
 
+    // This is the error in desired x,y,z values and actual values
     float e1 = (xd-x);
     float e2 = (yd-y);
     float e3 = (zd-z);
 
+    // This is the error in desired x,y,z velocities and the actual velocities
     float edot1 = (xd_dot-xdot);
     float edot2 = (yd_dot-ydot);
     float edot3 = (zd_dot-zdot);
-
+    
+    // This is an intermediary step to calculate repeated values in the torque equation with simple impedance control.
     taux = KPx*RT11*e1 + KPx*RT12*e2 + KPx*RT13*e3 + KDx*RT11*edot1 + KDx*RT12*edot2 + KDx*RT13*edot3;
     tauy = KPy*RT21*e1 + KPy*RT22*e2 + KPy*RT23*e3 + KDy*RT21*edot1 + KDy*RT22*edot2 + KDy*RT23*edot3;
     tauz = KPz*RT31*e1 + KPz*RT32*e2 + KPz*RT33*e3 + KDz*RT31*edot1 + KDz*RT32*edot2 + KDz*RT33*edot3;
 
-    // Simple Impedence Control
+    /* Below are the set of equations utilized to calcualte the torques for each joint of the robot. We have created torque equations to control
+    the robot utilizing simple impedance control which can weaken the robots control in an axis direction. We have coded Task space PD control 
+    that accounts for the torque needed to overcome friction which is important to tune KP and KD values to each of the x, y and z axes.
+    We have created a control law for just friction control. We also still have PID and Feedforward control laws below from previous labs.
+    */
+    
+    // Simple Impedence Control   
     *tau1 = ((JT_11*R11+JT_12*R21+JT_13*R31)*taux+(JT_11*R12+JT_12*R22+JT_13*R32)*tauy+(JT_11*R13+JT_12*R23+JT_13*R33)*tauz)+ff1*u_fric1;
     *tau2 = ((JT_21*R11+JT_22*R21+JT_23*R31)*taux+(JT_21*R12+JT_22*R22+JT_23*R32)*tauy+(JT_21*R13+JT_22*R23+JT_23*R33)*tauz)+ff2*u_fric2;;
     *tau3 = ((JT_31*R11+JT_32*R21+JT_33*R31)*taux+(JT_31*R12+JT_32*R22+JT_33*R32)*tauy+(JT_31*R13+JT_32*R23+JT_33*R33)*tauz)+ff3*u_fric3;;
 
+    // This code prevents any jerky accelerations when the code starts running
     if (mycount < 16 ) {
         *tau1 = 0;
         *tau2 = 0;
@@ -619,8 +632,6 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
     Simulink_PlotVar2 = xd;
     Simulink_PlotVar3 = y;
     Simulink_PlotVar4 = yd;
-    Simulink_PlotVar5 = z;
-    Simulink_PlotVar6 = zd;
 
     theta1motorlast = theta1motor;
     theta2motorlast = theta2motor;
