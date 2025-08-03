@@ -13,50 +13,37 @@ I developed a comprehensive control system for the CRS Catalyst-5 robot arm, imp
 **File:** `control-implementations/trajectory_feedforward_control.c`
 
 - Implemented discrete-time PID control as the foundation for all advanced control strategies
-- Developed anti-windup mechanisms to handle actuator saturation
+- Developed anti-windup mechanisms to prevent integral saturation when actuators hit limits
+- Discrete implementation optimized for 5ms sampling time with derivative filtering for noise reduction
+- Gain scheduling for different operating regions to maintain performance across the workspace
 - Achieved stable control with rise time < 0.5s and overshoot < 5%
-- Key features:
-  - Discrete PID implementation optimized for 5ms sampling time
-  - Integral anti-windup to prevent controller saturation
-  - Derivative filtering to reduce noise amplification
-  - Gain scheduling for different operating regions
 
 ### 2. Enhanced Performance: Trajectory Generation with Feedforward Control
 **Building on PID:** `control-implementations/trajectory_feedforward_control.c`
 
 - Extended PID control with feedforward compensation for improved tracking
-- Implemented cubic spline trajectory planning for smooth joint motion
+- Implemented cubic spline trajectory planning with 5th-order polynomial blending for jerk-limited motion
+- Added velocity and acceleration feedforward terms plus gravity compensation
+- Enabled real-time trajectory modification for dynamic path adjustments
 - Reduced tracking error by 60-70% compared to PID alone
-- Advanced features:
-  - 5th-order polynomial blending for jerk-limited motion
-  - Velocity and acceleration feedforward terms
-  - Gravity compensation based on robot configuration
-  - Real-time trajectory modification capability
 
 ### 3. Advanced Control: Adaptive Impedance with Friction Compensation
 **File:** `control-implementations/impedance_friction_compensation.c`
 
-- Built upon PID foundation to implement variable impedance control
-- Added adaptive friction compensation using Coulomb + viscous model
-- Enabled safe human-robot interaction and force control
-- Technical achievements:
-  - Stiffness range: 10-1000 N/m (adjustable in real-time)
-  - Friction model adapts within 2-3 seconds
-  - Seamless transition between position and force control modes
-  - Force control accuracy: ±0.5 N
+- Built upon PID foundation to implement variable impedance control with stiffness range 10-1000 N/m
+- Added adaptive friction compensation using Coulomb + viscous model that converges within 2-3 seconds
+- Enabled seamless transition between position and force control modes
+- Achieved force control accuracy of ±0.5 N for safe human-robot interaction
+- Implemented real-time parameter adaptation for changing load conditions
 
 ### 4. System Integration: Multi-Waypoint Navigation with Adaptive Control
 **File:** `control-implementations/multi_waypoint_adaptive_control.c`
 
-- Integrated all control strategies into a unified system
-- Complex path planning through multiple waypoints (as shown in setup image)
-- Adaptive control for handling unknown payloads
-- Demonstrated with egg manipulation task requiring delicate force control
-- Combined features:
-  - PID for stable position control
-  - Feedforward for accurate trajectory tracking
-  - Impedance control for safe object interaction
-  - Adaptive algorithms for changing conditions
+- Integrated all control strategies (PID, feedforward, impedance, and adaptive) into a unified system
+- Implemented complex path planning through multiple waypoints (as shown in setup image)
+- Developed adaptive control algorithms for handling unknown payloads without recalibration
+- Demonstrated precision with egg manipulation task requiring 500g of pressure to be applied using delicate force control
+- Achieved seamless mode switching between position, velocity, and force control based on task requirements
 
 ## Hardware Setup and Demonstration
 
@@ -110,11 +97,12 @@ The video shows the robot executing precise waypoint navigation while handling d
 ```
 
 ### Performance Metrics
-- **Control Loop Rate:** 200 Hz (5ms)
-- **Position Accuracy:** < 0.5° (joint space)
-- **End-Effector Precision:** < 2mm (workspace)
-- **Settling Time:** < 0.8s for 30° step response
-- **Overshoot:** < 5% with adaptive tuning
+- **Control Loop Rate:** 200 Hz (5ms sampling time)
+- **Rise Time:** < 300ms (PD control specification)
+- **Overshoot:** < 1% (achieved with tuned gains)
+- **Trajectory Execution:** Smooth cubic/quintic polynomial planning with configurable speed (achieved 0.35s for π/6 radian movements)
+- **Force Control:** 500g precision for delicate manipulation
+- **Steady State Error:** Minimal with integral control
 
 ## Key Algorithms Implemented
 
