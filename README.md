@@ -1,11 +1,14 @@
 # Advanced Robotics Control System
 ## Real-Time Control Implementation for 3-DOF Robot Arm
 
-This repository showcases my implementation of advanced control algorithms for a 3-DOF robotic manipulator using the TI F28335 DSP. The project demonstrates progression from basic PID control to sophisticated adaptive control strategies.
+This repository showcases my implementation of advanced control algorithms for a 3-DOF robotic manipulator using the TI F28335 DSP. I developed a comprehensive control system for the CRS Catalyst-5 robot arm, implementing multiple control strategies in real-time at 200Hz (5ms sampling rate). The project demonstrates progression from basic PID control to sophisticated adaptive control strategies, integrating position, velocity, and force control modes with advanced features like friction compensation and impedance control.
 
-## Project Overview
+<video width="100%" controls>
+  <source src="documentation/images/robot_demo.mov" type="video/quicktime">
+  Your browser does not support the video tag.
+</video>
 
-I developed a comprehensive control system for the CRS Catalyst-5 robot arm, implementing multiple control strategies in real-time at 200Hz (5ms sampling rate). The system integrates position, velocity, and force control modes with advanced features like friction compensation and impedance control.
+[View Robot Demo Video](documentation/images/robot_demo.mov)
 
 ## Core Control Implementations
 
@@ -13,10 +16,10 @@ I developed a comprehensive control system for the CRS Catalyst-5 robot arm, imp
 **File:** `control-implementations/trajectory_feedforward_control.c`
 
 - Implemented discrete-time PID control as the foundation for all advanced control strategies
-- Developed anti-windup mechanisms to prevent integral saturation when actuators hit limits
+- Developed anti-windup mechanisms to prevent integral term saturation
 - Discrete implementation optimized for 5ms sampling time with derivative filtering for noise reduction
 - Gain scheduling for different operating regions to maintain performance across the workspace
-- Achieved stable control with rise time < 0.5s and overshoot < 5%
+- Achieved stable control with rise time < 300ms and overshoot < 1%
 
 ### 2. Enhanced Performance: Trajectory Generation with Feedforward Control
 **Building on PID:** `control-implementations/trajectory_feedforward_control.c`
@@ -48,7 +51,7 @@ I developed a comprehensive control system for the CRS Catalyst-5 robot arm, imp
 ## Hardware Setup and Demonstration
 
 ### Experimental Setup
-The image below shows the complete robotic system with numbered waypoints for multi-trajectory control testing:
+The complete robotic system includes numbered waypoints for multi-trajectory control testing:
 
 ![Robot Setup with Waypoints](documentation/images/robot_setup_numbered.png)
 
@@ -66,11 +69,6 @@ The numbered markers (1-10) indicate the waypoints that the robot navigates thro
 - Task demonstration objects (including the egg for delicate manipulation tests)
 - Safety barriers and emergency stop button
 
-### Video Demonstration
-A video demonstration of the multi-waypoint adaptive control system in action can be found at:
-[Robot Demo Video](documentation/images/robot_demo.mov)
-
-The video shows the robot executing precise waypoint navigation while handling delicate objects, demonstrating the effectiveness of the impedance control and friction compensation algorithms.
 
 ## Technical Specifications
 
