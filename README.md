@@ -3,7 +3,7 @@
 
 This repository showcases my implementation of advanced control algorithms for a 3-DOF robotic manipulator using the TI F28335 DSP. I developed a comprehensive control system for the CRS Catalyst-5 robot arm, implementing multiple control strategies in real-time at 200Hz (5ms sampling rate). The project demonstrates progression from basic PID control to sophisticated adaptive control strategies, integrating position, velocity, and force control modes with advanced features like friction compensation and impedance control.
 
-[![Robot Demo Video](https://img.youtube.com/vi/E96IdtK3EkI/maxresdefault.jpg)](https://youtu.be/E96IdtK3EkI)
+[📹 Watch Robot Demo Video](https://youtu.be/E96IdtK3EkI)
 
 ## Core Control Implementations
 
